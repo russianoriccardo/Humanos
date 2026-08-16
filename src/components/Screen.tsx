@@ -14,7 +14,7 @@ type ScreenProps = {
 
 export function Screen({ step, totalSteps, onBack, onSkip, footer, children }: ScreenProps) {
   return (
-    <div className="flex h-[100dvh] flex-col bg-bg text-text">
+    <div className="flex h-full flex-col bg-bg text-text">
       <header className="flex shrink-0 items-center justify-between px-6 pt-4 pb-2">
         <div className="flex h-11 w-11 items-center justify-start">
           {onBack && (

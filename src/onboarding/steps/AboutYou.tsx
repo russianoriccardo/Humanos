@@ -1,5 +1,6 @@
 import { Screen } from '../../components/Screen'
 import { PrimaryButton } from '../../components/PrimaryButton'
+import { SecondaryButton } from '../../components/SecondaryButton'
 import { Field } from '../../components/Field'
 import { Chip } from '../../components/Chip'
 import type { Activity, Answers } from '../types'
@@ -41,9 +42,12 @@ export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYou
       onBack={onBack}
       onSkip={onSkip}
       footer={
-        <PrimaryButton onClick={onNext} disabled={!isValid}>
-          Continue
-        </PrimaryButton>
+        <div className="flex flex-col items-center gap-2">
+          <PrimaryButton onClick={onNext} disabled={!isValid}>
+            Continue
+          </PrimaryButton>
+          <SecondaryButton onClick={onBack}>Back</SecondaryButton>
+        </div>
       }
     >
       <div className="flex flex-col gap-6">

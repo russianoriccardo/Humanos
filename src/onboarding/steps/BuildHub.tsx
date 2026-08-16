@@ -1,5 +1,6 @@
 import { Screen } from '../../components/Screen'
 import { PrimaryButton } from '../../components/PrimaryButton'
+import { SecondaryButton } from '../../components/SecondaryButton'
 import { ModuleCard } from '../../components/ModuleCard'
 import { MODULES, MODULE_ICONS, suggestedModuleIds } from '../../lib/modules'
 import type { Answers } from '../types'
@@ -32,9 +33,12 @@ export function BuildHub({ answers, onChange, onNext, onBack, onSkip }: BuildHub
       onBack={onBack}
       onSkip={onSkip}
       footer={
-        <PrimaryButton onClick={onNext} disabled={count === 0}>
-          {count === 0 ? 'Continue' : `Continue · ${count} module${count === 1 ? '' : 's'}`}
-        </PrimaryButton>
+        <div className="flex flex-col items-center gap-2">
+          <PrimaryButton onClick={onNext} disabled={count === 0}>
+            {count === 0 ? 'Continue' : `Continue · ${count} module${count === 1 ? '' : 's'}`}
+          </PrimaryButton>
+          <SecondaryButton onClick={onBack}>Back</SecondaryButton>
+        </div>
       }
     >
       <div className="flex flex-col gap-6">

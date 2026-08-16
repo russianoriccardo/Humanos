@@ -1,5 +1,6 @@
 import { Screen } from '../../components/Screen'
 import { PrimaryButton } from '../../components/PrimaryButton'
+import { SecondaryButton } from '../../components/SecondaryButton'
 import { SelectableRow } from '../../components/SelectableRow'
 import { GOALS } from '../../lib/modules'
 import type { Answers } from '../types'
@@ -32,9 +33,12 @@ export function Goals({ answers, onChange, onNext, onBack, onSkip }: GoalsProps)
       onBack={onBack}
       onSkip={onSkip}
       footer={
-        <PrimaryButton onClick={onNext} disabled={answers.goals.length === 0}>
-          Continue
-        </PrimaryButton>
+        <div className="flex flex-col items-center gap-2">
+          <PrimaryButton onClick={onNext} disabled={answers.goals.length === 0}>
+            Continue
+          </PrimaryButton>
+          <SecondaryButton onClick={onBack}>Back</SecondaryButton>
+        </div>
       }
     >
       <div className="flex flex-col gap-6">

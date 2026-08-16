@@ -94,7 +94,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           <BuildHub answers={answers} onChange={updateAnswers} onNext={goNext} onBack={goBack} onSkip={goNext} />
         )
       case 4:
-        return <AllSet answers={answers} onComplete={() => onComplete(answers)} />
+        return <AllSet answers={answers} onBack={goBack} onComplete={() => onComplete(answers)} />
       default:
         return null
     }

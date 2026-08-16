@@ -1,16 +1,18 @@
 import { Check } from 'lucide-react'
 import { Screen } from '../../components/Screen'
 import { PrimaryButton } from '../../components/PrimaryButton'
+import { SecondaryButton } from '../../components/SecondaryButton'
 import { Chip } from '../../components/Chip'
 import { MODULES } from '../../lib/modules'
 import type { Answers } from '../types'
 
 type AllSetProps = {
   answers: Answers
+  onBack: () => void
   onComplete: () => void
 }
 
-export function AllSet({ answers, onComplete }: AllSetProps) {
+export function AllSet({ answers, onBack, onComplete }: AllSetProps) {
   const selectedModules = MODULES.filter((module) => answers.modules.includes(module.id))
 
   return (
@@ -18,8 +20,9 @@ export function AllSet({ answers, onComplete }: AllSetProps) {
       step={4}
       totalSteps={5}
       footer={
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-2">
           <PrimaryButton onClick={onComplete}>Enter your hub</PrimaryButton>
+          <SecondaryButton onClick={onBack}>Back</SecondaryButton>
           <p className="text-sm text-muted">You can edit modules anytime in Settings.</p>
         </div>
       }
