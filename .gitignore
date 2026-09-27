@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# MediaPipe WASM is copied from node_modules at dev/build time
+public/mediapipe/
