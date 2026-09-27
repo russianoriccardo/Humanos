@@ -1,3 +1,6 @@
+import { useLayoutEffect, useRef } from 'react'
+import { playEnter } from '../lib/motion'
+
 type GlowScoreRingProps = {
   score: number | null
   size?: number
@@ -9,6 +12,13 @@ export function GlowScoreRing({ score, size = 76 }: GlowScoreRingProps) {
   const radius = (size - STROKE) / 2
   const circumference = 2 * Math.PI * radius
   const progress = score === null ? 0 : Math.min(Math.max(score, 0), 100) / 100
+  const arcRef = useRef<SVGCircleElement>(null)
+  const dormant = score === null
+
+  // The ring fills from empty when the score first appears ("wakes up").
+  useLayoutEffect(() => {
+    if (arcRef.current) playEnter(arcRef.current, { strokeDashoffset: String(circumference) })
+  }, [dormant, circumference])
 
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
@@ -27,6 +37,7 @@ export function GlowScoreRing({ score, size = 76 }: GlowScoreRingProps) {
           <>
             <circle cx={size / 2} cy={size / 2} r={radius} fill="none" strokeWidth={STROKE} className="stroke-tint" />
             <circle
+              ref={arcRef}
               cx={size / 2}
               cy={size / 2}
               r={radius}
