@@ -70,3 +70,14 @@ export const GOALS: Goal[] = [
 export function suggestedModuleIds(goalIds: string[]): string[] {
   return GOALS.filter((goal) => goalIds.includes(goal.id)).map((goal) => goal.moduleId)
 }
+
+export function moduleName(id: string) {
+  return MODULES.find((m) => m.id === id)?.name ?? id
+}
+
+// Dashboard order: Skincare first when picked (it's the only module with a setup flow today).
+// Falls back to Skincare alone if onboarding's module step was skipped.
+export function orderedModules(picked: string[]): string[] {
+  const list = picked.length > 0 ? picked : ['skincare']
+  return list.includes('skincare') ? ['skincare', ...list.filter((id) => id !== 'skincare')] : list
+}
