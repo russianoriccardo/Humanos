@@ -35,7 +35,9 @@ export function AllSet({ answers, onBack, onComplete }: AllSetProps) {
         </div>
 
         <div className="flex flex-col items-center gap-2">
-          <h1 className="text-[28px] leading-tight font-bold text-text">You're all set, {answers.name}</h1>
+          <h1 className="text-[28px] leading-tight font-bold text-text">
+            You're all set{answers.name.trim() ? `, ${answers.name.trim()}` : ''}
+          </h1>
           <p className="max-w-[300px] text-base text-muted">
             Your hub is ready with the modules you picked. Your routines start today.
           </p>

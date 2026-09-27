@@ -107,7 +107,7 @@ export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYou
 
           <div className="flex flex-col gap-2">
             <label className="text-xs font-medium tracking-wide text-muted uppercase">
-              Activity level<span className="text-accent"> *</span>
+              Activity level<span className="text-accent-text"> *</span>
             </label>
             <div className="flex gap-2">
               {ACTIVITY_OPTIONS.map((option) => (

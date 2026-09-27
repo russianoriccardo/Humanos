@@ -38,7 +38,7 @@ export function Welcome({ onNext }: WelcomeProps) {
 
         <div className="mt-2 flex flex-col items-center gap-2">
           <p className="text-2xl font-semibold tracking-[4px] text-text">HUMANOS</p>
-          <p className="text-[10px] font-medium tracking-[3px] text-accent uppercase">
+          <p className="text-[10px] font-medium tracking-[3px] text-accent-text uppercase">
             Biohack your best self
           </p>
         </div>

@@ -9,11 +9,40 @@
   --color-surface: #ffffff;
   --color-border: #e7e1d4;
   --color-text: #262a21;
-  --color-muted: #7c7f72;
+  --color-muted: #65685c;
   --color-accent: #b79a62;
+  --color-accent-text: #806634;
+  --color-on-accent: #1a1c14;
   --color-tint: #efebe0;
   --color-cta: #45503b;
   --color-cta-text: #f7f4ed;
+  --color-warning: #a34a14;
+  --color-warning-tint: #fbe9dc;
+  --color-panel: #131510;
+  --color-on-panel: #f1ede2;
+
+  --animate-pop: pop 180ms ease-out;
+  --animate-scanline: scanline 1.6s ease-in-out infinite;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scanline {
+  0% {
+    top: 0%;
+  }
+  100% {
+    top: 100%;
+  }
 }
 
 :root.dark {
@@ -23,9 +52,12 @@
   --color-text: #f1ede2;
   --color-muted: #9a9c8d;
   --color-accent: #c7a868;
+  --color-accent-text: #c7a868;
   --color-tint: #292c21;
   --color-cta: #c7a868;
   --color-cta-text: #1a1c14;
+  --color-warning: #e8955a;
+  --color-warning-tint: #3a2518;
 }
 
 html,
@@ -40,7 +72,11 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .onboarding-step {
+  .step-transition,
+  .motion-slide {
     transform: none !important;
+  }
+  .animate-pop {
+    animation: none;
   }
 }

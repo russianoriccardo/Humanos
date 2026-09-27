@@ -38,7 +38,7 @@ export function ModuleCard({ name, icon: Icon, selected, suggested = false, onCl
 
       <span className="flex flex-col gap-0.5">
         <span className="text-base font-semibold text-text">{name}</span>
-        {suggested && <span className="text-xs font-medium text-accent">Suggested for you</span>}
+        {suggested && <span className="text-xs font-medium text-accent-text">Suggested for you</span>}
       </span>
     </button>
   )

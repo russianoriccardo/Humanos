@@ -36,7 +36,7 @@ export function Field({
     <div className="flex flex-col gap-2">
       <label htmlFor={id} className="text-xs font-medium tracking-wide text-muted uppercase">
         {label}
-        {required && <span className="text-accent"> *</span>}
+        {required && <span className="text-accent-text"> *</span>}
       </label>
 
       {type === 'select' ? (
