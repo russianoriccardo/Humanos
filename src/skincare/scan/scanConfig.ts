@@ -1,7 +1,8 @@
 // Every tunable number for the face scan lives here.
 export const scanConfig = {
-  modelPath: '/models/face_landmarker.task',
-  wasmPath: '/mediapipe/wasm',
+  // BASE_URL keeps these working whether the app is served from the domain root or a sub-path.
+  modelPath: `${import.meta.env.BASE_URL}models/face_landmarker.task`,
+  wasmPath: `${import.meta.env.BASE_URL}mediapipe/wasm`,
 
   // Live preview check rate.
   liveFps: 10,

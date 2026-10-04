@@ -12,6 +12,6 @@ createRoot(document.getElementById('root')!).render(
 // Production only: a service worker in dev would cache Vite's modules and fight hot reload.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => undefined)
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => undefined)
   })
 }

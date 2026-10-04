@@ -1,8 +1,10 @@
 // Minimal service worker: makes HUMANOS installable and lets it reopen offline.
 // Navigations go network-first (fresh deploys win); same-origin assets are served from cache and
 // refreshed in the background. Camera frames never touch this: they are never requested over the network.
-const CACHE = 'humanos-v1'
-const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png']
+const CACHE = 'humanos-v2'
+// Paths are relative to this file, so the app works at the domain root or under a sub-path.
+const ROOT = new URL('./', self.location).href
+const SHELL = ['./', 'manifest.webmanifest', 'favicon.svg', 'icons/icon-192.png', 'icons/icon-512.png']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)))
@@ -25,10 +27,10 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((response) => {
           const copy = response.clone()
-          caches.open(CACHE).then((cache) => cache.put('/', copy))
+          caches.open(CACHE).then((cache) => cache.put(ROOT, copy))
           return response
         })
-        .catch(() => caches.match('/')),
+        .catch(() => caches.match(ROOT)),
     )
     return
   }

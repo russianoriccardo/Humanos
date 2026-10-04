@@ -21,8 +21,22 @@ URL on phones** — see the HTTPS note below. It does work on `localhost` on the
 (git-ignored). The face model is committed at `public/models/face_landmarker.task`, so the scan makes no
 third-party requests.
 
+`VITE_BASE` (default `/`) sets the path the app is served from.
+
 Other scripts: `npm run build` (type-check + production build into `dist/`), `npm run preview` (serve the build),
 `npm run lint`.
+
+## Live site (GitHub Pages)
+
+https://russianoriccardo.github.io/Humanos/ — the landing page, with the app prototype at
+https://russianoriccardo.github.io/Humanos/app/.
+
+`.github/workflows/pages.yml` rebuilds and publishes both on every push to `main` (or run it by hand from the
+Actions tab). It builds the app with `VITE_BASE=/<repo>/app/`, copies `landing/` to the site root and the app build
+to `app/`. In the repo settings, **Pages → Source** must be set to **GitHub Actions**.
+
+The landing page is a single self-contained file: `landing/index.html`. Its waitlist form is a front-end prototype
+and doesn't store emails yet.
 
 ## Deploy (Netlify)
 

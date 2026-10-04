@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="HumanOS tells you the one thing that matters today. Sleep, food, skin, cycle, mind and more, in one calm place. Join the waitlist.">
+<meta name="theme-color" content="#0B0E12">
+<meta property="og:title" content="HumanOS · The operating system for your wellbeing">
+<meta property="og:description" content="Ten apps. One quiet system. Join the HumanOS waitlist.">
+<link rel="icon" type="image/svg+xml" href="app/favicon.svg">
+<title>HumanOS · Biohack your best self</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0B0E12; --calm:#0C1311; --surface:#13171C; --raised:#1B2026; --line:#252B32;
+  --text:#ECEAE4; --muted:#8E979E; --faint:#5A636B;
+  --sage:#6EE7B7; --ink:#1D1606; --gold:#F5C76E; --olive:#6B7F4E; --alarm:#FF4D4F;
+  --display:"Jost","Futura","Avenir Next",system-ui,sans-serif;
+  --body:"Instrument Sans","Helvetica Neue",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --gutter:clamp(16px,5vw,64px);
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--text);font:16px/1.6 var(--body);margin:0;overflow-x:clip}
+h1,h2,h3,h4{font-family:var(--display);font-weight:300;text-wrap:balance;margin:0;letter-spacing:-.005em}
+p{margin:0}
+a{color:inherit}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+.eyebrow{font:500 11px/1.2 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.gold{color:var(--gold)} .sage{color:var(--gold)}
+.wrap{max-width:1160px;margin:0 auto;padding-inline:var(--gutter)}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--gold);color:var(--ink);border:0;border-radius:999px;padding:14px 22px;font-weight:600;font-size:15px;text-decoration:none;transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px -10px rgba(245,199,110,.55)}
+
+/* ── NAV ─────────────────────────────── */
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;padding:calc(env(safe-area-inset-top,0px) + 14px) var(--gutter) 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:linear-gradient(180deg,rgba(11,14,18,.85),rgba(11,14,18,0));}
+.logo{display:flex;align-items:center;gap:12px;font:400 14px/1 var(--display);letter-spacing:.42em;text-decoration:none}
+.logo .pr{position:relative;width:34px;height:34px}
+.logo .pr svg{position:absolute;inset:0}
+.nav .btn{padding:10px 16px;font-size:13.5px}
+
+/* ── HERO (pinned scroll) ─────────────── */
+.hero{position:relative;height:340svh}
+.stage{position:sticky;top:0;height:100svh;min-height:560px;overflow:hidden}
+.layer{position:absolute;inset:0;pointer-events:none}
+.chaos-bg{background:radial-gradient(40% 35% at 18% 22%,rgba(255,77,79,.16),transparent 70%),radial-gradient(35% 30% at 82% 70%,rgba(124,92,255,.14),transparent 70%),radial-gradient(30% 30% at 70% 15%,rgba(255,149,0,.10),transparent 70%),var(--bg)}
+.calm-bg{opacity:0;background:radial-gradient(55% 55% at 50% 58%,rgba(110,231,183,.10),transparent 70%),radial-gradient(70% 60% at 50% 100%,rgba(107,127,78,.22),transparent 70%),var(--calm)}
+.grain{opacity:.35;background-image:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1px);background-size:3px 3px}
+
+.notes{position:absolute;inset:0}
+.n{position:absolute;width:var(--nw);will-change:transform,opacity}
+.n-in{display:grid;grid-template-columns:30px 1fr;gap:4px 10px;padding:11px 13px;border-radius:16px;background:rgba(36,40,47,.86);border:1px solid rgba(255,255,255,.07);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 12px 30px -12px rgba(0,0,0,.7);animation:pop .5s cubic-bezier(.2,1.4,.4,1) backwards}
+.n-ic{grid-row:span 2;width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font:600 13px/1 var(--body);color:#fff;position:relative}
+.n-ic i{position:absolute;top:-5px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--alarm);font:600 10px/17px var(--body);font-style:normal;text-align:center;box-shadow:0 0 0 2px #24282F}
+.n-top{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:#A3ABB3;text-transform:uppercase;letter-spacing:.04em}
+.n-msg{font-size:13px;line-height:1.35;color:#F1F1F1}
+.n-in.ping{animation:ping .5s ease}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.9)}}
+@keyframes ping{25%{transform:translateX(-5px) rotate(-1deg)}50%{transform:translateX(5px) rotate(1deg)}75%{transform:translateX(-3px)}}
+
+.visual{position:absolute;left:50%;top:var(--vy,56%);width:0;height:0;will-change:transform}
+.ringwrap{position:absolute;left:0;top:0;width:var(--ring);height:var(--ring);transform:translate(-50%,-50%)}
+.ringwrap svg{width:100%;height:100%;overflow:visible}
+.ringwrap.breathe{animation:breathe 10s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1)}40%{transform:translate(-50%,-50%) scale(1.045)}}
+.halo{position:absolute;left:0;top:0;width:calc(var(--ring)*.9);height:calc(var(--ring)*.9);transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(245,199,110,.10),transparent 65%);opacity:0}
+
+/* phone */
+.phone{position:absolute;left:0;top:0;height:var(--ph);aspect-ratio:9/18.6;transform:translate(-50%,-50%);border-radius:calc(var(--ph)*.075);background:#07090B;padding:calc(var(--ph)*.014);box-shadow:0 0 0 1px #2B323A,0 40px 80px -30px rgba(0,0,0,.9),0 0 90px -30px rgba(245,199,110,.22);container-type:inline-size;opacity:0}
+.screen{height:100%;border-radius:calc(var(--ph)*.062);background:linear-gradient(180deg,#10161A 0%,#0B0F12 100%);padding:9cqw 7cqw 6cqw;display:flex;flex-direction:column;gap:5cqw;overflow:hidden;position:relative}
+.sb{display:flex;justify-content:space-between;font:600 4cqw/1 var(--body);color:#C9CED3}
+.greet small{font:500 3.4cqw/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.greet h5{margin:2cqw 0 0;font:300 7.4cqw/1.15 var(--display)}
+.score{display:grid;grid-template-columns:20cqw 1fr;gap:4cqw;align-items:center}
+.score svg{width:20cqw;height:20cqw}
+.score p{font-size:4.1cqw;line-height:1.4;color:#B8C0C6}
+.prio{background:linear-gradient(180deg,#18221F,#131A1B);border:1px solid #2A3833;border-radius:6cqw;padding:5.5cqw;display:grid;gap:2.6cqw}
+.prio .eyebrow{font-size:3.1cqw;color:var(--gold)}
+.prio h6{margin:0;font:400 7cqw/1.1 var(--display)}
+.prio p{font-size:4cqw;line-height:1.4;color:#AEB7BD}
+.prio .pb{justify-self:start;background:var(--gold);color:var(--ink);border-radius:99px;padding:2.4cqw 4.4cqw;font:600 3.8cqw/1 var(--body);margin-top:1cqw}
+.also{display:grid;gap:2.4cqw}
+.also div{display:flex;justify-content:space-between;font-size:3.8cqw;color:#9AA3AA;padding:3.2cqw 4cqw;border-radius:4cqw;background:rgba(255,255,255,.03)}
+.tabbar{margin-top:auto;display:flex;justify-content:space-around;padding-top:3cqw}
+.tabbar b{width:4.5cqw;height:4.5cqw;border-radius:50%;background:#2A3037}
+.tabbar b:first-child{background:var(--gold)}
+
+/* hero copy */
+.copy{position:absolute;z-index:5}
+.c-chaos{left:50%;top:50%;transform:translate(-50%,-50%);width:min(780px,calc(100% - 2*var(--gutter)));text-align:center;padding:clamp(24px,4vw,44px) clamp(20px,4vw,48px);border-radius:36px;background:rgba(11,14,18,.72);border:1px solid rgba(255,255,255,.06);backdrop-filter:blur(14px) saturate(.7);-webkit-backdrop-filter:blur(14px) saturate(.7);box-shadow:0 30px 80px -20px rgba(0,0,0,.8)}
+.c-chaos h1{font-size:clamp(30px,5.2vw,68px);line-height:1.04}
+.c-chaos p{margin-top:18px;color:#B9C0C6;font-size:clamp(16px,1.6vw,19px)}
+.c-breathe{left:50%;top:18%;transform:translateX(-50%);text-align:center;opacity:0;width:100%}
+.c-breathe h2{font-size:clamp(28px,4vw,48px);color:var(--gold)}
+.c-calm{left:var(--gutter);top:50%;transform:translateY(-50%);width:min(40vw,520px);opacity:0;display:grid;gap:22px;pointer-events:none}
+.c-calm h1{font-size:clamp(36px,4.6vw,64px);line-height:1.04}
+.c-calm p{color:var(--muted);font-size:18px;max-width:40ch}
+.c-calm .row{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.c-calm .free{color:var(--muted);font-size:13px}
+.ghost{display:inline-flex;align-items:center;gap:8px;color:var(--text);text-decoration:none;border:1px solid #3A424A;border-radius:999px;padding:13px 20px;font-weight:500;font-size:15px;transition:border-color .2s,color .2s}
+.ghost:hover{border-color:var(--gold);color:var(--gold)}
+.ghost::after{content:"→"}
+.counter{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 26px);transform:translateX(-50%);z-index:6;display:flex;align-items:center;gap:10px;padding:9px 16px;border-radius:999px;background:rgba(19,23,28,.8);border:1px solid var(--line);font:500 12px/1 var(--mono);letter-spacing:.06em;white-space:nowrap}
+.counter b{font:500 13px/1 var(--mono);color:var(--alarm);min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}
+.counter.calm b{color:var(--gold)}
+.hint{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 80px);transform:translateX(-50%);z-index:6;font:500 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted);display:grid;justify-items:center;gap:10px}
+.hint::after{content:"";width:1px;height:28px;background:linear-gradient(var(--muted),transparent);animation:drip 2s ease-in-out infinite}
+@keyframes drip{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+@media (max-width:899px){
+  .c-calm{left:var(--gutter);right:var(--gutter);top:calc(env(safe-area-inset-top,0px) + 84px);transform:none;width:auto;gap:14px}
+  .c-calm h1{font-size:clamp(28px,8vw,40px)}
+  .c-calm p{display:none}
+  .c-chaos{top:44%}
+}
+
+/* ── SECTIONS ────────────────────────── */
+section.block{padding-block:clamp(96px,14vw,160px);background:var(--calm)}
+.sec-head{display:grid;gap:18px;max-width:760px}
+.sec-head h2{font-size:clamp(32px,4.6vw,56px);line-height:1.06}
+.sec-head p{color:var(--muted);font-size:18px;max-width:58ch}
+
+/* how it decides */
+.steps{margin-top:64px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;list-style:none;padding:0}
+@media (max-width:820px){.steps{grid-template-columns:1fr}}
+.steps li{display:grid;gap:14px;padding-top:24px;border-top:1px solid var(--line)}
+.steps svg{width:44px;height:44px}
+.steps h3{font-size:26px}
+.steps p{color:var(--muted);font-size:15.5px}
+.steps .ex{font:400 13px/1.5 var(--mono);color:var(--gold)}
+
+/* day */
+.day{display:grid;grid-template-columns:minmax(300px,1fr) 1.1fr;gap:clamp(24px,6vw,96px);margin-top:48px}
+.day-phone{position:sticky;top:0;height:100svh;display:grid;place-items:center}
+.day-vis{position:relative;width:0;height:0;--ph:min(600px,74svh);--ring:min(640px,80svh,44vw)}
+.day-vis .phone{opacity:1}
+.day-vis .ringwrap{position:absolute}
+.clock{font:300 15cqw/1 var(--display);letter-spacing:-.01em}
+.clock small{display:block;margin-top:2cqw;font:500 3.3cqw/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.slot{transition:opacity .45s ease,transform .45s ease}
+.slot.swap{opacity:0;transform:translateY(6px)}
+.quiet{border:1px dashed #2C343B;border-radius:6cqw;padding:6cqw;display:grid;gap:2.6cqw;justify-items:start}
+.quiet .eyebrow{font-size:3.1cqw}
+.quiet p{font-size:4.3cqw;color:var(--faint);line-height:1.45}
+.screen.dim{background:linear-gradient(180deg,#0C1013,#090B0D)}
+.moments{display:grid}
+.moment{min-height:78svh;display:grid;align-content:center;gap:16px;padding-block:40px}
+.moment .t{font:500 13px/1 var(--mono);letter-spacing:.12em;color:var(--gold)}
+.moment h3{font-size:clamp(28px,3.4vw,42px);line-height:1.1}
+.moment p{color:var(--muted);font-size:17px;max-width:44ch}
+.moment.is-quiet .t{color:var(--faint)}
+.moment .mini{display:none}
+@media (max-width:820px){
+  .day{grid-template-columns:1fr}
+  .day-phone{display:none}
+  .moment{min-height:auto;padding-block:36px;border-top:1px solid var(--line)}
+  .moment .mini{display:block;width:min(300px,100%);margin-top:8px;container-type:inline-size;border-radius:24px;background:#10161A;padding:6cqw}
+}
+
+/* orbit */
+.orbit-stage{--sw:min(1320px,calc(100vw - 32px));position:relative;margin-top:48px;display:grid;justify-items:center;gap:20px;width:var(--sw);margin-inline:calc((100% - var(--sw))/2)}
+.orbit{position:relative;width:min(480px,100%);aspect-ratio:1}
+.orbit>svg{position:absolute;inset:0;width:100%;height:100%}
+#orbArc{transition:stroke-dasharray .7s cubic-bezier(.3,.8,.3,1)}
+.orb-ring{position:absolute;inset:0;will-change:transform}
+.node{position:absolute;width:0;height:0}
+.node button{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;background:var(--raised);border:1px solid var(--line);border-radius:999px;padding:9px 14px;font:500 11.5px/1 var(--mono);letter-spacing:.05em;color:#AEB6BC;transition:background .3s,color .3s,border-color .3s,box-shadow .3s}
+.node button:hover,.node.on button{background:var(--gold);color:var(--ink);border-color:var(--gold);box-shadow:0 0 0 6px rgba(245,199,110,.12),0 0 40px rgba(245,199,110,.35)}
+.node.rel button{border-color:rgba(245,199,110,.6);color:var(--gold)}
+.orbit.dimmed .node:not(.on):not(.rel) button{opacity:.45}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes spinr{from{transform:translate(-50%,-50%) rotate(0)}to{transform:translate(-50%,-50%) rotate(-360deg)}}
+.orb-core{position:absolute;inset:30%;display:grid;place-items:center;text-align:center;pointer-events:none}
+.orb-core b{font:300 clamp(40px,6.4vw,66px)/1 var(--display);display:block;transition:opacity .25s}
+.orb-core small{font:500 10px/1.4 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:block;margin-top:6px}
+.orb-hint{font:500 11px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:10px}
+.orb-hint::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(245,199,110,.18);animation:beat 2.4s ease-in-out infinite}
+@keyframes beat{50%{box-shadow:0 0 0 8px rgba(245,199,110,0)}}
+
+.mcard{position:absolute;z-index:4;width:290px;background:rgba(19,23,28,.96);border:1px solid rgba(245,199,110,.35);border-radius:22px;padding:20px 20px 18px;display:grid;gap:12px;box-shadow:0 30px 60px -20px rgba(0,0,0,.8),0 0 60px -20px rgba(245,199,110,.25);opacity:0;transform:translateY(8px) scale(.97);transition:opacity .25s ease,transform .3s cubic-bezier(.2,.8,.2,1);pointer-events:none;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.mcard.show{opacity:1;transform:none}
+.mcard h3{font-size:24px;font-weight:400}
+.mcard .tl{color:#C9CFD3;font-size:14.5px;margin-top:-4px}
+.mcard .tr{color:var(--muted);font-size:13.5px;line-height:1.5}
+.mcard q{quotes:none;display:block;font:400 13px/1.5 var(--mono);color:var(--gold);padding:12px 14px;border-radius:14px;background:rgba(245,199,110,.07)}
+.mcard .rels{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.mcard .rels span{font:500 10.5px/1 var(--mono);letter-spacing:.04em;border:1px solid var(--line);color:#B5BDC2;border-radius:999px;padding:6px 9px}
+.mcard .rels .eyebrow{border:0;padding:0;margin-right:4px;color:var(--muted);font-size:10px}
+.leader{position:absolute;z-index:3;height:1px;transform-origin:0 50%;background:linear-gradient(90deg,rgba(245,199,110,.8),rgba(245,199,110,.1));opacity:0;transition:opacity .25s;pointer-events:none}
+.leader.show{opacity:1}
+@media (max-width:899px){
+  .mcard{position:static;width:min(460px,100%);opacity:1;transform:none;pointer-events:auto}
+  .mcard.idle{border-color:var(--line);box-shadow:none}
+  .leader{display:none}
+}
+@media (max-width:600px){
+  .orbit{width:calc(100% - 96px)}
+  .node button{font-size:10.5px;padding:7px 10px}
+}
+
+/* benefits */
+.benefits{margin-top:56px;display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+@media (max-width:1000px){.benefits{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.benefits{grid-template-columns:1fr}}
+.benefit{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:26px;display:grid;gap:12px;align-content:start}
+.benefit h3{font-size:24px;font-weight:400}
+.benefit p{color:var(--muted);font-size:15px}
+.benefit q{quotes:none;font:400 13px/1.5 var(--mono);color:var(--gold);padding-top:12px;border-top:1px solid var(--line)}
+
+/* trust */
+.trust{margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:28px}
+@media (max-width:900px){.trust{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.trust{grid-template-columns:1fr}}
+.trust div{display:grid;gap:8px}
+.trust b{font:400 20px/1.2 var(--display)}
+.trust span{color:var(--muted);font-size:15px}
+.devices{margin-top:40px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.devices span{border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;color:#C3C9CE}
+
+/* waitlist */
+.wl{position:relative;overflow:hidden;text-align:center}
+.wl-ring{position:absolute;left:50%;top:50%;width:min(900px,130vw);aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none;opacity:.55}
+.wl-inner{position:relative;display:grid;justify-items:center;gap:22px;max-width:620px;margin:0 auto}
+.wl-inner h2{font-size:clamp(34px,5.4vw,64px);line-height:1.04}
+.wl-inner>p{color:var(--muted);font-size:18px}
+.form{width:100%;margin-top:14px;background:rgba(19,23,28,.8);border:1px solid var(--line);border-radius:28px;padding:clamp(20px,4vw,32px);display:grid;gap:18px;text-align:left;backdrop-filter:blur(8px)}
+.form label{font-size:13.5px;color:var(--muted)}
+.field{display:grid;gap:8px}
+.form input{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:14px;padding:14px 16px;font:inherit}
+.form input:focus{border-color:var(--gold);outline:none;box-shadow:0 0 0 3px rgba(245,199,110,.15)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{background:transparent;border:1px solid var(--line);color:#B3BBC1;border-radius:999px;padding:8px 14px;font-size:14px;transition:all .2s}
+.chips button:hover{border-color:#3A434B}
+.chips button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold);background:rgba(245,199,110,.06)}
+.form .btn{justify-content:center;width:100%}
+.err{color:var(--gold);font-size:13.5px}
+.done{display:grid;gap:10px;justify-items:center;text-align:center;padding-block:8px}
+.done b{font:300 64px/1 var(--display);color:var(--gold);font-variant-numeric:tabular-nums}
+.done p{color:var(--muted);max-width:40ch}
+.fine{font-size:12.5px;color:var(--faint)}
+
+footer{background:var(--calm);border-top:1px solid var(--line);padding-block:32px calc(env(safe-area-inset-bottom,0px) + 32px)}
+footer .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;color:var(--faint);font-size:13px}
+
+@media (prefers-reduced-motion:reduce){
+  .n-in,.n-in.ping{animation:none}
+  .ringwrap.breathe,.hint::after,.orb-hint::before{animation:none}
+  .node button{transform:translate(-50%,-50%)}
+  .mcard{transition:none}
+  .slot{transition:none}
+}
+</style>
+</head>
+<body>
+
+
+<header class="nav">
+  <a class="logo" href="#top" aria-label="HumanOS, back to top">
+    <span class="pr">
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="16" fill="none" stroke="#252B32" stroke-width="1.6"/>
+        <circle id="navprog" cx="20" cy="20" r="16" fill="none" stroke="url(#gOlive)" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="100.5" stroke-dashoffset="100.5" transform="rotate(-90 20 20)"/>
+        <path d="M20 10.5c-3.6 3.4 3.6 6.1 0 9.5s3.6 6.1 0 9.5M20 10.5c3.6 3.4-3.6 6.1 0 9.5s-3.6 6.1 0 9.5" fill="none" stroke="#F5C76E" stroke-width="1"/>
+      </svg>
+    </span>
+    HUMANOS
+  </a>
+  <a class="btn" href="#waitlist">Join the waitlist</a>
+</header>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gOlive" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F5C76E"/><stop offset="1" stop-color="#6B7F4E"/></linearGradient>
+    <linearGradient id="gSage" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBE3A6"/><stop offset="1" stop-color="#C9A24E"/></linearGradient>
+  </defs>
+</svg>
+
+<main id="top">
+  <!-- ── HERO ── -->
+  <section class="hero" id="hero" aria-label="From notification noise to one clear priority">
+    <div class="stage" id="stage">
+      <div class="layer chaos-bg"></div>
+      <div class="layer calm-bg" id="calmbg"></div>
+      <div class="layer grain"></div>
+
+      <div class="notes" id="notes" aria-hidden="true"></div>
+
+      <div class="visual" id="visual">
+        <div class="halo" id="halo"></div>
+        <div class="ringwrap" id="ringwrap">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle cx="100" cy="100" r="96" fill="none" stroke="rgba(255,255,255,.05)" stroke-width=".6"/>
+            <circle id="bigring" cx="100" cy="100" r="96" fill="none" stroke="url(#gOlive)" stroke-width="1.4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-100 100 100)"/>
+            <circle id="dotTop" cx="100" cy="4" r="1.8" fill="#F5C76E" opacity="0"/>
+          </svg>
+        </div>
+        <div class="phone" id="heroPhone" role="img" aria-label="HumanOS home screen showing one priority for today: hydration">
+          <div class="screen">
+            <div class="sb"><span>07:12</span><span>●●● ◔</span></div>
+            <div class="greet"><small>Sunday</small><h5>Good morning,<br>Lilia</h5></div>
+            <div class="score">
+              <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="none" stroke="#232A30" stroke-width="3"/><circle cx="20" cy="20" r="16" fill="none" stroke="url(#gSage)" stroke-width="3" stroke-linecap="round" pathLength="100" stroke-dasharray="87 100" transform="rotate(-90 20 20)"/><text x="20" y="24" text-anchor="middle" fill="#ECEAE4" font-family="Jost,sans-serif" font-size="11" font-weight="300">87</text></svg>
+              <p>You recovered well. Keep today simple.</p>
+            </div>
+            <div class="prio">
+              <span class="eyebrow">Today’s priority</span>
+              <h6>Hydration.</h6>
+              <p>It’s warm, you train at 18:00 and you drank 1.2 L yesterday.</p>
+              <span class="pb">Drink 200 ml now</span>
+            </div>
+            <div class="also"><div><span>Training</span><span>18:00</span></div><div><span>Evening routine</span><span>22:15</span></div></div>
+            <div class="tabbar"><b></b><b></b><b></b><b></b><b></b></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="copy c-chaos" id="cChaos">
+        <h1>Ten apps. Forty-seven pings a day. None of them talk to each other.</h1>
+        <p>Your sleep app nags. Your water app nags. Your skincare app nags. Nobody tells you what actually matters.</p>
+      </div>
+      <div class="copy c-breathe" id="cBreathe"><h2>Now breathe out.</h2></div>
+      <div class="copy c-calm" id="cCalm">
+        <span class="eyebrow gold">The operating system for your wellbeing</span>
+        <h1>HumanOS tells you the one thing that matters today.</h1>
+        <p>Sleep, food, skin, cycle, mind and more, in one calm place. An AI that speaks only when it has something useful to say.</p>
+        <div class="row"><a class="btn" href="#waitlist" tabindex="-1" id="heroCta">Join the waitlist</a><a class="ghost" href="app/" tabindex="-1" id="heroDemo">Try the prototype</a></div>
+        <small class="free">Free early access · iOS &amp; Android</small>
+      </div>
+
+      <div class="hint" id="hint">Scroll to breathe out</div>
+      <div class="counter" id="counter" aria-hidden="true"><b id="count">47</b><span id="countLabel">notifications today</span></div>
+    </div>
+  </section>
+
+  <!-- ── HOW IT DECIDES ── -->
+  <section class="block" id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow gold">Why only one thing</span>
+        <h2>It reads everything, so you don’t have to.</h2>
+        <p>HumanOS looks at your whole day, weighs what matters most right now, and turns it into one small action. The data stays in the background. The decision comes to you.</p>
+      </div>
+      <ol class="steps">
+        <li>
+          <svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="none" stroke="#252B32" stroke-width="2"/><circle cx="22" cy="22" r="19" fill="none" stroke="url(#gOlive)" stroke-width="2" stroke-linecap="round" pathLength="3" stroke-dasharray="1 3" transform="rotate(-90 22 22)"/></svg>
+          <h3>It observes</h3>
+          <p>Sleep, meals, hydration, training, cycle, weather, UV and the devices you already wear.</p>
+          <span class="ex">Slept 6 h 10 · UV 7 · training 18:00</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="none" stroke="#252B32" stroke-width="2"/><circle cx="22" cy="22" r="19" fill="none" stroke="url(#gOlive)" stroke-width="2" stroke-linecap="round" pathLength="3" stroke-dasharray="2 3" transform="rotate(-90 22 22)"/></svg>
+          <h3>It prioritises</h3>
+          <p>It picks the one or two things with the biggest impact on you today, and leaves the rest alone.</p>
+          <span class="ex">Priority: hydration · everything else can wait</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" fill="none" stroke="#252B32" stroke-width="2"/><circle cx="22" cy="22" r="19" fill="none" stroke="url(#gOlive)" stroke-width="2" stroke-linecap="round" pathLength="3" stroke-dasharray="3 3" transform="rotate(-90 22 22)"/></svg>
+          <h3>It suggests</h3>
+          <p>One clear action you can do in seconds. Then it steps back.</p>
+          <span class="ex">“Drink 200 ml now.”</span>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ── A DAY ── -->
+  <section class="block" id="day" style="padding-bottom:40px">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow gold">A day with HumanOS</span>
+        <h2>Meet the app that knows when to stay quiet.</h2>
+        <p>Four moments. Long silences in between. That’s the whole point.</p>
+      </div>
+      <div class="day">
+        <div class="day-phone" aria-hidden="true">
+          <div class="day-vis">
+            <div class="ringwrap">
+              <svg viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="96" fill="none" stroke="rgba(255,255,255,.06)" stroke-width=".8"/>
+                <circle id="dayring" cx="100" cy="100" r="96" fill="none" stroke="url(#gOlive)" stroke-width="1.4" stroke-linecap="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset=".98" transform="rotate(-90 100 100)" style="transition:stroke-dashoffset .8s cubic-bezier(.3,.8,.3,1)"/>
+                <g id="ticks"></g>
+              </svg>
+            </div>
+            <div class="phone">
+              <div class="screen" id="dayScreen">
+                <div class="sb"><span>HumanOS</span><span>●●● ◔</span></div>
+                <div class="clock" id="dayClock">07:10<small>Wake up</small></div>
+                <div class="slot" id="daySlot"></div>
+                <div class="tabbar"><b></b><b></b><b></b><b></b><b></b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="moments" id="moments"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ORBIT ── -->
+  <section class="block" id="orbit">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow gold">One home</span>
+        <h2>Your body is one system. Finally, so is your app.</h2>
+        <p>Every area of your wellbeing shares one memory, so HumanOS can see how they affect each other.</p>
+      </div>
+      <div class="orbit-stage" id="orbStage">
+        <div class="orbit" id="orbit">
+          <svg viewBox="0 0 200 200" aria-hidden="true">
+            <circle cx="100" cy="100" r="92" fill="none" stroke="rgba(255,255,255,.07)" stroke-width=".6"/>
+            <circle cx="100" cy="100" r="44" fill="none" stroke="#1F262D" stroke-width="5"/>
+            <circle id="orbArc" cx="100" cy="100" r="44" fill="none" stroke="url(#gSage)" stroke-width="5" stroke-linecap="round" pathLength="100" stroke-dasharray="87 100" transform="rotate(-90 100 100)"/>
+          </svg>
+          <div class="orb-ring" id="orbRing" role="group" aria-label="HumanOS modules"></div>
+          <div class="orb-core" aria-hidden="true"><div><b id="orbVal">87</b><small id="orbLab">Health score</small></div></div>
+        </div>
+        <div class="leader" id="leader" aria-hidden="true"></div>
+        <div class="mcard idle" id="mcard" aria-live="polite"></div>
+        <span class="orb-hint" id="orbHint">Hover a module to explore</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── BENEFITS ── -->
+  <section class="block" id="benefits">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow gold">What you get back</span>
+        <h2>Less to manage. More of you.</h2>
+      </div>
+      <div class="benefits">
+        <div class="benefit"><h3>Clarity every morning</h3><p>Know the one or two things that matter today without opening five apps.</p><q>“Today’s priority is hydration.”</q></div>
+        <div class="benefit"><h3>Your time back</h3><p>Designed for under 30 seconds a day. It fits into your life instead of interrupting it.</p><q>“Routine complete. See you tomorrow.”</q></div>
+        <div class="benefit"><h3>Patterns you’d never spot</h3><p>Sleep, food, stress and skin are connected. HumanOS finds the links and tells you why.</p><q>“You sleep better on days without caffeine after 14:00.”</q></div>
+        <div class="benefit"><h3>Progress without guilt</h3><p>Small, personal missions and honest encouragement. No red numbers, no shame.</p><q>“4 habits done this week. Keep going.”</q></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TRUST ── -->
+  <section class="block" id="trust" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow gold">Built on trust</span>
+        <h2>Calm by design.</h2>
+      </div>
+      <div class="trust">
+        <div><b>Privacy first</b><span>Your data is yours. It’s used to help you, never sold.</span></div>
+        <div><b>Never diagnoses</b><span>HumanOS helps you understand patterns. It doesn’t replace your doctor.</span></div>
+        <div><b>Never guilt-trips</b><span>No alarming tones, no streak shaming. Balance over perfection.</span></div>
+        <div><b>Quiet by default</b><span>If a message wouldn’t change what you do, you don’t get it.</span></div>
+      </div>
+      <div class="devices"><span class="eyebrow" style="margin-right:6px">Works with</span><span>Apple Health</span><span>Oura</span><span>Garmin</span><span>Whoop</span><span>Strava</span></div>
+    </div>
+  </section>
+
+  <!-- ── WAITLIST ── -->
+  <section class="block wl" id="waitlist">
+    <svg class="wl-ring" viewBox="0 0 200 200" aria-hidden="true">
+      <circle cx="100" cy="100" r="96" fill="none" stroke="url(#gOlive)" stroke-width=".5"/>
+      <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(255,255,255,.05)" stroke-width=".4"/>
+    </svg>
+    <div class="wrap">
+      <div class="wl-inner">
+        <span class="eyebrow gold">Early access</span>
+        <h2>Biohack your best self. In 30 seconds a day.</h2>
+        <p>Join the waitlist and be first to try HumanOS when it opens.</p>
+        <form class="form" id="wlform" novalidate>
+          <div id="wlfields" style="display:grid;gap:18px">
+            <div class="field"><label for="wl-email">Email</label><input id="wl-email" type="email" placeholder="you@example.com" autocomplete="email"></div>
+            <div class="field"><label id="chipsLabel">What do you want to improve first?</label>
+              <div class="chips" id="chips" role="group" aria-labelledby="chipsLabel">
+                <button type="button" aria-pressed="false">Sleep</button><button type="button" aria-pressed="false">Energy</button><button type="button" aria-pressed="false">Skin</button><button type="button" aria-pressed="false">Nutrition</button><button type="button" aria-pressed="false">Stress</button><button type="button" aria-pressed="false">Cycle</button><button type="button" aria-pressed="false">A bit of everything</button>
+              </div>
+            </div>
+            <p class="err" id="wlErr" hidden>Add your email so we can tell you when HumanOS opens.</p>
+            <button class="btn" type="submit">Join the waitlist</button>
+            <p class="fine">One email when we open, and a few updates before. Unsubscribe anytime.</p>
+          </div>
+          <div class="done" id="wlDone" hidden>
+            <span class="eyebrow sage">You’re in</span>
+            <b id="wlPos">#1,248</b>
+            <p>That’s your place in line. We’ll set up HumanOS to start with <span class="gold" id="wlArea">a bit of everything</span>. Invite three friends to move up 100 places.</p>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 HumanOS · The operating system for your wellbeing</span>
+    <span><a href="app/">Open the prototype</a> · HumanOS does not provide medical advice.</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var clamp=function(v){return v<0?0:v>1?1:v};
+  var ease=function(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2};
+  var range=function(p,a,b){return clamp((p-a)/(b-a))};
+
+  /* ── notifications ── */
+  var N=[
+    ['Sleep','#7C5CFF','z','Sleep score 58. Poor night again.','3'],
+    ['Water','#2F8CFF','w','You’re 1.4 L behind your goal!','7'],
+    ['Calories','#FF7A1A','c','3 meals not logged today.','3'],
+    ['Skincare','#FF5FA2','s','Evening routine: 2 of 6 steps done.','2'],
+    ['Steps','#FF4D4F','→','Only 2,104 steps. Get moving!','1'],
+    ['Supplements','#F2B400','+','Take your Omega 3. Take your D3.','4'],
+    ['Cycle','#C34BFF','○','Log your symptoms for today.','1'],
+    ['Meditate','#18B38A','◐','Your 12-day streak has ended.','1'],
+    ['Dental','#3FB6FF','d','Did you floss? Reply YES or NO.','9'],
+    ['Weather','#FF9500','☼','UV index 7. Reapply SPF.','1'],
+    ['Workout','#FF3B6B','↑','Leg day! 45 min. No excuses.','2'],
+    ['Mood','#8E7CFF','m','How are you feeling? Tap to log.','5'],
+    ['Water','#2F8CFF','w','Reminder: drink water.','8'],
+    ['Weekly report','#5E6AD2','≡','Your report is ready: 14 charts.','1'],
+    ['Protein','#FF7A1A','p','Protein goal 38% complete.','2'],
+    ['Sleep','#7C5CFF','z','Bedtime was 40 min ago.','4'],
+    ['Fasting','#FF6B3D','f','Fasting window broken.','1'],
+    ['Posture','#00B7A8','|','Sit up straight!','6'],
+    ['Breathing','#18B38A','~','Time for your breathing session.','3'],
+    ['Steps','#FF4D4F','→','Your friend walked 12,000 steps.','2'],
+    ['Skincare','#FF5FA2','s','Retinol tonight? Don’t forget.','1'],
+    ['Heart rate','#FF2D55','♥','Resting HR above average.','1']
+  ];
+  var notes=document.getElementById('notes'), stage=document.getElementById('stage');
+  var seed=7; function rnd(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646}
+  var els=[];
+  var small = innerWidth<600;
+  var count = small ? 14 : N.length;
+  // spread on a jittered grid so cards cover the screen without piling up
+  var cols = small?2:5, rows=Math.ceil(count/cols);
+  for(var i=0;i<count;i++){
+    var d=N[i], c=i%cols, r=Math.floor(i/cols);
+    var x=clamp((c+ .15 + rnd()*.7)/cols), y=clamp(.06+ (r+ .1 + rnd()*.8)/rows*.9);
+    var w=document.createElement('div'); w.className='n';
+    w.style.setProperty('--nw', small?'min(230px,62vw)':'clamp(230px,19vw,290px)');
+    w.style.left='calc((100% - var(--nw)) * '+x.toFixed(3)+')';
+    w.style.top='calc((100% - 70px) * '+y.toFixed(3)+')';
+    w.innerHTML='<div class="n-in" style="animation-delay:'+(i*110)+'ms"><div class="n-ic" style="background:'+d[1]+'">'+d[2]+'<i>'+d[4]+'</i></div><div class="n-top"><span>'+d[0]+'</span><span>now</span></div><div class="n-msg">'+d[3]+'</div></div>';
+    notes.appendChild(w);
+    els.push({el:w,inner:w.firstChild,cx:0,cy:0,delay:rnd()});
+  }
+
+  var visual=document.getElementById('visual'), ringwrap=document.getElementById('ringwrap'), bigring=document.getElementById('bigring'),
+      dotTop=document.getElementById('dotTop'), phone=document.getElementById('heroPhone'), halo=document.getElementById('halo'),
+      calmbg=document.getElementById('calmbg'), cChaos=document.getElementById('cChaos'), cBreathe=document.getElementById('cBreathe'),
+      cCalm=document.getElementById('cCalm'), hint=document.getElementById('hint'), counter=document.getElementById('counter'),
+      countEl=document.getElementById('count'), countLabel=document.getElementById('countLabel'), heroCta=document.getElementById('heroCta'),
+      hero=document.getElementById('hero'), navprog=document.getElementById('navprog');
+
+  var W,H,wide,vy;
+  function layout(){
+    W=stage.clientWidth;H=stage.clientHeight;wide=W>=900;
+    vy = wide?0.54:0.64;
+    visual.style.setProperty('--vy',(vy*100)+'%');
+    var ph = wide? Math.min(580,H*0.7) : Math.min(430,H*0.5);
+    visual.style.setProperty('--ph',ph+'px');
+    visual.style.setProperty('--ring',Math.min(ph*1.02, W*(wide?.46:.96))+'px');
+    els.forEach(function(o){o.cx=o.el.offsetLeft+o.el.offsetWidth/2;o.cy=o.el.offsetTop+o.el.offsetHeight/2;});
+    tick(true);
+  }
+
+  var pings=0, lastP=-1;
+  function tick(force){
+    var rect=hero.getBoundingClientRect();
+    var total=hero.offsetHeight-stage.offsetHeight;
+    var p=clamp(-rect.top/total);
+    // nav progress ring: whole page
+    var docP=clamp(scrollY/(document.documentElement.scrollHeight-innerHeight));
+    navprog.setAttribute('stroke-dashoffset',(100.5*(1-docP)).toFixed(1));
+    if(!force && Math.abs(p-lastP)<0.0005) return; lastP=p;
+
+    var phoneT=ease(range(p,.52,.72));
+    var shift = wide ? W*0.17*phoneT : 0;
+    visual.style.transform='translateX('+shift+'px)';
+    var tx=W/2+shift, ty=H*vy;
+
+    // collapse
+    els.forEach(function(o){
+      var t=ease(range(p,.10+o.delay*.12,.40+o.delay*.12));
+      var dx=(tx-o.cx)*t, dy=(ty-o.cy)*t;
+      o.el.style.transform='translate('+dx.toFixed(1)+'px,'+dy.toFixed(1)+'px) scale('+(1-.82*t).toFixed(3)+')';
+      o.el.style.opacity=(1-clamp(t*1.25)).toFixed(3);
+    });
+
+    calmbg.style.opacity=ease(range(p,.18,.55)).toFixed(3);
+    var ringT=ease(range(p,.30,.56));
+    bigring.style.strokeDashoffset=(1-ringT).toFixed(4);
+    dotTop.setAttribute('opacity',ringT>0.98?1:0);
+    ringwrap.style.opacity=(0.3+0.7*ringT).toFixed(3);
+    if(p>.72 && !reduce) ringwrap.classList.add('breathe'); else ringwrap.classList.remove('breathe');
+    halo.style.opacity=(ringT*0.9).toFixed(3);
+
+    phone.style.opacity=phoneT.toFixed(3);
+    phone.style.transform='translate(-50%,calc(-50% + '+((1-phoneT)*40).toFixed(1)+'px)) scale('+(0.94+0.06*phoneT).toFixed(3)+')';
+
+    var a=1-range(p,.06,.2);
+    cChaos.style.opacity=a.toFixed(3);
+    cChaos.style.transform='translate(-50%,calc(-50% - '+((1-a)*30).toFixed(1)+'px))';
+    var b=range(p,.26,.36)*(1-range(p,.5,.6));
+    cBreathe.style.opacity=b.toFixed(3);
+    var c=ease(range(p,.66,.8));
+    cCalm.style.opacity=c.toFixed(3);
+    cCalm.style.pointerEvents=c>.5?'auto':'none';
+    heroCta.tabIndex=c>.5?0:-1; document.getElementById('heroDemo').tabIndex=c>.5?0:-1;
+    hint.style.opacity=(1-range(p,0,.06)).toFixed(3);
+
+    var base=47+pings, collapse=range(p,.1,.62);
+    var n=Math.max(1,Math.round(base-(base-1)*ease(collapse)));
+    countEl.textContent=n;
+    var calm = n===1;
+    counter.classList.toggle('calm',calm);
+    countLabel.textContent = calm ? 'thing that matters today' : 'notifications today';
+    counter.style.opacity = (1-range(p,.86,.98)).toFixed(3);
+  }
+
+  var ticking=false;
+  addEventListener('scroll',function(){ if(!ticking){ticking=true;requestAnimationFrame(function(){tick();ticking=false;});}},{passive:true});
+  addEventListener('resize',function(){requestAnimationFrame(layout)});
+  layout();
+
+  // keep the noise alive while the visitor is still at the top
+  if(!reduce){
+    setInterval(function(){
+      if(lastP>0.08) return;
+      var o=els[Math.floor(Math.random()*els.length)];
+      o.inner.classList.remove('ping'); void o.inner.offsetWidth; o.inner.classList.add('ping');
+      if(pings<52){pings++; tick(true);}
+    },1300);
+  }
+
+  /* ── day ── */
+  var M=[
+    {t:'07:10',h:7.17,lab:'Wake up',title:'It starts with one sentence.',body:'No charts to decode before coffee. HumanOS reads your night and tells you what it means.',e:'Morning brief',p:'You slept 7 h 42 and recovered well. A good day to train.',b:'Plan my day'},
+    {t:'10:30',h:10.5,lab:'Quiet',q:1,title:'Then, silence.',body:'Nothing useful to say, so HumanOS says nothing. No streak alarms. No nudges just to keep you in the app.',p:'Nothing needs your attention. Enjoy your morning.'},
+    {t:'16:00',h:16,lab:'Before training',title:'The right nudge, at the right time.',body:'It connects the weather, your training and yesterday’s hydration into one small action.',e:'Today’s priority',p:'It’s 24° and you train at 18:00. Drink 500 ml before you go.',b:'+ 500 ml'},
+    {t:'19:30',h:19.5,lab:'Quiet',q:1,title:'Still quiet.',body:'Dinner logged in one tap. Nothing follows unless it matters.',p:'Dinner logged. Nothing else for now.'},
+    {t:'22:15',h:22.25,lab:'Wind down',title:'Wind down, gently.',body:'Patterns from your own nights, turned into one suggestion.',e:'Evening',p:'You sleep better with lights out before 23:00. Start your routine in 20 minutes.',b:'Start routine'},
+    {t:'23:00',h:23,lab:'Day closed',title:'28 seconds. That’s all.',body:'Progress celebrated, nothing demanded. Balance, not perfection.',e:'Well done',p:'4 of 5 habits done today. Time in HumanOS: 28 seconds.',b:'See you tomorrow'}
+  ];
+  function card(m){
+    return m.q ? '<div class="quiet"><span class="eyebrow">Silent</span><p>'+m.p+'</p></div>'
+               : '<div class="prio"><span class="eyebrow">'+m.e+'</span><p style="color:#D5DADE;font-size:4.4cqw">'+m.p+'</p><span class="pb">'+m.b+'</span></div>';
+  }
+  var mw=document.getElementById('moments');
+  M.forEach(function(m,i){
+    var a=document.createElement('article'); a.className='moment'+(m.q?' is-quiet':''); a.dataset.i=i;
+    a.innerHTML='<span class="t">'+m.t+' · '+m.lab.toUpperCase()+'</span><h3>'+m.title+'</h3><p>'+m.body+'</p><div class="mini">'+card(m)+'</div>';
+    mw.appendChild(a);
+  });
+  // ring ticks for each moment
+  var ticks=document.getElementById('ticks'), ns='http://www.w3.org/2000/svg';
+  M.forEach(function(m){
+    var ang=((m.h-7)/16)*.9*Math.PI*2-Math.PI/2, c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',100+96*Math.cos(ang)); c.setAttribute('cy',100+96*Math.sin(ang)); c.setAttribute('r',m.q?1.2:2);
+    c.setAttribute('fill',m.q?'#5A636B':'#F5C76E'); ticks.appendChild(c);
+  });
+  var slot=document.getElementById('daySlot'), clockEl=document.getElementById('dayClock'), dayring=document.getElementById('dayring'), dayScreen=document.getElementById('dayScreen');
+  var cur=-1;
+  function showMoment(i){
+    if(i===cur) return; cur=i; var m=M[i];
+    slot.classList.add('swap');
+    setTimeout(function(){
+      clockEl.innerHTML=m.t+'<small>'+m.lab+'</small>';
+      slot.innerHTML=card(m);
+      dayScreen.classList.toggle('dim',!!m.q);
+      slot.classList.remove('swap');
+    }, reduce?0:220);
+    dayring.style.strokeDashoffset=(1-Math.max(.02,(m.h-7)/16*.9)).toFixed(3);
+  }
+  showMoment(0);
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting) showMoment(+e.target.dataset.i); });
+  },{rootMargin:'-45% 0px -45% 0px'});
+  mw.querySelectorAll('.moment').forEach(function(a){io.observe(a)});
+
+  /* ── orbit ── */
+  var MODS=[
+    {n:'Sleep',tl:'Know why last night went well.',tr:'Duration, phases and bedtime consistency, from your wearable or a single tap.',ins:'You sleep 45 minutes longer on days you drink 2 L.',v:'7h 42',vl:'Last night',pct:84,rel:['Hydration','Mind','Fitness']},
+    {n:'Nutrition',tl:'Protein and balance, logged in a tap.',tr:'Meals, protein, fibre and timing, without counting every calorie.',ins:'Add 25 g of protein at lunch to support tomorrow’s training.',v:'82 g',vl:'Protein today',pct:75,rel:['Fitness','Skincare','Supplements']},
+    {n:'Hydration',tl:'Adjusted to heat and training.',tr:'Water intake with a target that moves with the weather and your workouts.',ins:'It’s 24° and you train at 18:00. Drink 500 ml before you go.',v:'1.6 L',vl:'of 2.2 L today',pct:73,rel:['UV','Fitness','Sleep']},
+    {n:'Skincare',tl:'Morning and evening, synced with UV.',tr:'Routine steps, products and how your skin responds over time.',ins:'Retinol twice a week is working for you. Keep that rhythm.',v:'4/4',vl:'Morning routine',pct:100,rel:['UV','Sleep','Nutrition']},
+    {n:'Oral care',tl:'Small habits, remembered for you.',tr:'Brushing, flossing, brush-head changes and check-up dates.',ins:'Time for a new brush head. It’s been three months.',v:'2/2',vl:'Brushes today',pct:100,rel:['Nutrition']},
+    {n:'Cycle',tl:'Advice that follows your phase.',tr:'Phase, symptoms and energy, used to tune your training, food and skin advice.',ins:'Follicular phase: energy is usually higher. A good week for harder sessions.',v:'Day 8',vl:'Follicular phase',pct:29,rel:['Fitness','Mind','Skincare']},
+    {n:'Mind',tl:'Stress and mood, without the pressure.',tr:'Quick mood check-ins, stress level and short breathing sessions.',ins:'Your stress tends to rise on days you sleep under 6 hours.',v:'Calm',vl:'Today’s mood',pct:70,rel:['Sleep','Fitness']},
+    {n:'Fitness',tl:'Training that fits your recovery.',tr:'Steps, workouts and recovery, pulled from the devices you already use.',ins:'You’re well recovered. Today is a good day for a harder run.',v:'6,842',vl:'Steps today',pct:68,rel:['Sleep','Nutrition','Hydration']},
+    {n:'Supplements',tl:'Remembered, tracked, never overdone.',tr:'What you take and when, checked against your routine.',ins:'3 of 5 taken. Magnesium is next, with dinner.',v:'3/5',vl:'Taken today',pct:60,rel:['Nutrition','Sleep']},
+    {n:'UV',tl:'Sun advice for your skin and your day.',tr:'Local UV index and weather, turned into skin and hydration advice.',ins:'UV 7 at noon. Reapply SPF if you’re outside.',v:'UV 7',vl:'Peak at 13:00',pct:70,rel:['Skincare','Hydration']}
+  ];
+  var orbit=document.getElementById('orbit'), orb=document.getElementById('orbRing'), stageO=document.getElementById('orbStage'),
+      mcard=document.getElementById('mcard'), leader=document.getElementById('leader'), orbVal=document.getElementById('orbVal'),
+      orbLab=document.getElementById('orbLab'), orbArc=document.getElementById('orbArc'), orbHint=document.getElementById('orbHint');
+  var touch=matchMedia('(hover: none)').matches;
+  orbHint.textContent = touch ? 'Tap a module to explore' : 'Hover a module to explore';
+  var nodesByName={};
+  MODS.forEach(function(m,i){
+    var a=(i/MODS.length)*Math.PI*2-Math.PI/2, n=document.createElement('div');
+    n.className='node'; n.style.left=(50+46*Math.cos(a))+'%'; n.style.top=(50+46*Math.sin(a))+'%';
+    var b=document.createElement('button'); b.type='button'; b.textContent=m.n; b.setAttribute('aria-describedby','mcard');
+    n.appendChild(b); orb.appendChild(n); nodesByName[m.n]=n; m.node=n; m.btn=b;
+  });
+  function cardHTML(m){
+    return '<span class="eyebrow gold">Module</span><h3>'+m.n+'</h3><p class="tl">'+m.tl+'</p><p class="tr">'+m.tr+'</p><q>“'+m.ins+'”</q>'+
+      '<div class="rels"><span class="eyebrow">Connects with</span>'+m.rel.map(function(r){return '<span>'+r+'</span>'}).join('')+'</div>';
+  }
+  function idleHTML(){ return '<span class="eyebrow gold">One memory</span><p class="tr">'+(touch?'Tap':'Choose')+' any module on the ring to see what it tracks, what HumanOS tells you, and which areas it connects with.</p>'; }
+  mcard.innerHTML=idleHTML();
+  var active=null, leaveT=null;
+  function wideMode(){return innerWidth>=900}
+  function activate(m){
+    clearTimeout(leaveT);
+    if(active && active!==m){ active.node.classList.remove('on'); }
+    MODS.forEach(function(x){x.node.classList.remove('rel')});
+    active=m; m.node.classList.add('on');
+    m.rel.forEach(function(r){nodesByName[r].classList.add('rel')});
+    orbit.classList.add('paused','dimmed');
+    orbVal.textContent=m.v; orbLab.textContent=m.vl; orbArc.setAttribute('stroke-dasharray',m.pct+' 100');
+    mcard.innerHTML=cardHTML(m); mcard.classList.remove('idle');
+    if(wideMode()) place(m); 
+  }
+  function place(m){
+    var sr=stageO.getBoundingClientRect(), br=m.btn.getBoundingClientRect(), or=orbit.getBoundingClientRect();
+    var cw=mcard.offsetWidth, ch=mcard.offsetHeight, gap=36;
+    var bx=br.left+br.width/2-sr.left, by=br.top+br.height/2-sr.top, ocx=or.left+or.width/2-sr.left;
+    var leftSide = bx<ocx, x, ax;
+    if(leftSide){ x=br.left-sr.left-gap-cw; ax=br.left-sr.left; } else { x=br.right-sr.left+gap; ax=br.right-sr.left; }
+    x=Math.max(0,Math.min(sr.width-cw,x));
+    var y=Math.max(0,Math.min(sr.height-ch,by-ch/2));
+    mcard.style.left=x+'px'; mcard.style.top=y+'px';
+    // leader line from label edge to card edge
+    var tx = leftSide ? x+cw : x, ty = Math.max(y+24,Math.min(y+ch-24,by));
+    var dx=tx-ax, dy=ty-by, len=Math.hypot(dx,dy);
+    leader.style.left=ax+'px'; leader.style.top=by+'px'; leader.style.width=Math.max(0,len)+'px';
+    leader.style.transform='rotate('+Math.atan2(dy,dx)+'rad)';
+    mcard.classList.add('show'); leader.classList.toggle('show',len>8);
+  }
+  function deactivate(){
+    leaveT=setTimeout(function(){
+      if(!active) return;
+      active.node.classList.remove('on'); MODS.forEach(function(x){x.node.classList.remove('rel')});
+      orbit.classList.remove('paused','dimmed'); active=null;
+      orbVal.textContent='87'; orbLab.textContent='Health score'; orbArc.setAttribute('stroke-dasharray','87 100');
+      mcard.classList.remove('show'); leader.classList.remove('show');
+      if(!wideMode()){ mcard.innerHTML=idleHTML(); mcard.classList.add('idle'); }
+    },220);
+  }
+  MODS.forEach(function(m){
+    // mouse/pen: hover pauses and resumes; touch: tap toggles
+    m.btn.addEventListener('pointerenter',function(e){ if(e.pointerType!=='touch') activate(m); });
+    m.btn.addEventListener('pointerleave',function(e){ if(e.pointerType!=='touch') deactivate(); });
+    m.btn.addEventListener('pointerdown',function(e){ lastPointer=e.pointerType; });
+    m.btn.addEventListener('focus',function(){ if(lastPointer!=='touch') activate(m); });
+    m.btn.addEventListener('blur',function(){ if(lastPointer!=='touch') deactivate(); });
+    m.btn.addEventListener('click',function(){ if(lastPointer==='touch'){ if(active===m){deactivate();} else activate(m);} lastPointer=''; });
+  });
+  addEventListener('resize',function(){ if(active && wideMode()) place(active); });
+
+  // ring rotation, driven in JS so it eases to a stop on hover and eases back after
+  var lastPointer='', angle=0, speed=0, cruise=reduce?0:4, lastT=0, inView=false; // deg per second
+  new IntersectionObserver(function(es){inView=es[0].isIntersecting; if(inView){lastT=0;requestAnimationFrame(spinLoop);}}).observe(orbit);
+  function spinLoop(t){
+    if(!inView) return;
+    var dt=lastT?Math.min(.05,(t-lastT)/1000):0; lastT=t;
+    var target=active?0:cruise;
+    speed+= (target-speed)*Math.min(1,dt*(active?14:2.5));   // quick stop, gentle restart
+    if(Math.abs(speed)<.01 && active) speed=0;
+    angle=(angle+speed*dt)%360;
+    orb.style.transform='rotate('+angle.toFixed(3)+'deg)';
+    var inv='translate(-50%,-50%) rotate('+(-angle).toFixed(3)+'deg)';
+    for(var i=0;i<MODS.length;i++) MODS[i].btn.style.transform=inv;
+    if(active && speed>0 && wideMode()) place(active);
+    requestAnimationFrame(spinLoop);
+  }
+
+  /* ── waitlist ── */
+  var chosen='a bit of everything', chipBtns=document.querySelectorAll('#chips button');
+  chipBtns.forEach(function(b){b.addEventListener('click',function(){
+    chipBtns.forEach(function(x){x.setAttribute('aria-pressed','false')}); b.setAttribute('aria-pressed','true'); chosen=b.textContent.toLowerCase();
+  })});
+  document.getElementById('wlform').addEventListener('submit',function(e){
+    e.preventDefault();
+    var v=document.getElementById('wl-email').value.trim(), err=document.getElementById('wlErr');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){err.hidden=false;document.getElementById('wl-email').focus();return;}
+    err.hidden=true;
+    document.getElementById('wlArea').textContent=chosen;
+    document.getElementById('wlfields').hidden=true;
+    document.getElementById('wlDone').hidden=false;
+  });
+})();
+</script>
+
+</body>
+</html>
