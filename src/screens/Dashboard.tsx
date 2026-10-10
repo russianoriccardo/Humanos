@@ -111,9 +111,7 @@ export function Dashboard({
   const glowText = !live
     ? 'Wakes up with your first log. Set up a module to begin.'
     : variant === 'just-set-up'
-      ? active.baselineScan.fromPhoto
-        ? "Baseline set from your scan. Log tonight's routine to move it."
-        : "Baseline set from your answers. Log tonight's routine to move it."
+      ? "Your baseline. Log tonight's routine to move it."
       : glowReason(glow!.delta, usableWeather, health)
 
   const header = (
