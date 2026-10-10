@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { handle, type ClaudeClient } from './read-product'
+import { handle, type ClaudeClient } from '../functions/read-product'
 
 const SITE = 'https://humanos-demo.netlify.app'
 const env = (apiKey?: string) => ({ apiKey, allowedOrigins: [SITE] })
