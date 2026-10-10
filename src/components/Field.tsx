@@ -15,6 +15,8 @@ type FieldProps = {
   type?: 'text' | 'number' | 'select'
   suffix?: string
   options?: FieldOption[]
+  inputMode?: 'text' | 'numeric' | 'decimal'
+  enterKeyHint?: 'next' | 'done'
 }
 
 const inputStyles =
@@ -29,6 +31,8 @@ export function Field({
   type = 'text',
   suffix,
   options,
+  inputMode,
+  enterKeyHint,
 }: FieldProps) {
   const id = useId()
 
@@ -69,6 +73,8 @@ export function Field({
             value={value}
             onChange={(event) => onChange(event.target.value)}
             placeholder={placeholder}
+            inputMode={inputMode}
+            enterKeyHint={enterKeyHint}
             className={[inputStyles, suffix ? 'pr-12' : ''].join(' ')}
           />
           {suffix && (

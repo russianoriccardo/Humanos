@@ -57,13 +57,27 @@ export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYou
           <p className="text-xs text-muted">All fields are required.</p>
         </div>
 
-        <form className="flex flex-col gap-5" onSubmit={(event) => event.preventDefault()}>
+        <form
+          className="flex flex-col gap-5"
+          onSubmit={(event) => event.preventDefault()}
+          onKeyDown={(event) => {
+            // Enter moves to the next text field ("next"); on the last one ("done") it closes the keyboard.
+            const target = event.target as HTMLElement
+            if (event.key !== 'Enter' || !(target instanceof HTMLInputElement)) return
+            event.preventDefault()
+            const inputs = [...event.currentTarget.querySelectorAll('input')]
+            const next = inputs[inputs.indexOf(target) + 1]
+            if (next) next.focus()
+            else target.blur()
+          }}
+        >
           <Field
             label="Name"
             required
             value={answers.name}
             onChange={(value) => onChange({ name: value })}
             placeholder="Your name"
+            enterKeyHint="next"
           />
 
           <div className="grid grid-cols-2 gap-4">
@@ -74,6 +88,8 @@ export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYou
               value={answers.age}
               onChange={(value) => onChange({ age: value })}
               placeholder="27"
+              inputMode="numeric"
+              enterKeyHint="next"
             />
             <Field
               label="Sex"
@@ -94,6 +110,8 @@ export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYou
               value={answers.height}
               onChange={(value) => onChange({ height: value })}
               placeholder="168"
+              inputMode="numeric"
+              enterKeyHint="next"
             />
             <Field
               label="Weight"
@@ -102,6 +120,8 @@ export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYou
               value={answers.weight}
               onChange={(value) => onChange({ weight: value })}
               placeholder="58"
+              inputMode="numeric"
+              enterKeyHint="done"
             />
           </div>
 

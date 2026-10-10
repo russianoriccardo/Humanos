@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { Screen } from '../components/Screen'
 import { ThemeToggle } from '../components/ThemeToggle'
@@ -74,6 +74,14 @@ export function Dashboard({
   const tips = (plan?.tips ?? []).filter((tip) => tip.id !== 'calm')
   const glow = active ? glowBreakdown({ active, weatherLog: state.weatherLog, today }) : null
 
+  // Any touch dismisses the coach mark, without a full-screen layer that would swallow scrolls and taps.
+  useEffect(() => {
+    if (!showCoachMark) return
+    const dismiss = () => onActiveChange((a) => ({ ...a, seenCoachMark: true }))
+    document.addEventListener('pointerdown', dismiss, { once: true })
+    return () => document.removeEventListener('pointerdown', dismiss)
+  }, [showCoachMark, onActiveChange])
+
   function toggleStep(id: string) {
     onActiveChange((a) => {
       const current = a.routineLog[today] ?? []
@@ -124,15 +132,6 @@ export function Dashboard({
   const overlay = (
     <>
       {showToast && <Toast message="Skincare is set up" onDone={onToastDone} />}
-
-      {showCoachMark && (
-        <button
-          type="button"
-          aria-label="Dismiss tip"
-          className="absolute inset-0 z-20 cursor-default"
-          onClick={() => onActiveChange((a) => ({ ...a, seenCoachMark: true }))}
-        />
-      )}
 
       {demoOpen && (
         <DemoPanel

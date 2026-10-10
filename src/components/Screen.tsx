@@ -1,7 +1,15 @@
-import type { ReactNode } from 'react'
+import type { FocusEvent, ReactNode } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { ProgressDots } from './ProgressDots'
 import { ThemeToggle } from './ThemeToggle'
+import { useKeyboardOpen } from '../lib/useKeyboardOpen'
+
+// Waits for the keyboard animation, then centers the focused field.
+function scrollFieldIntoView(event: FocusEvent<HTMLElement>) {
+  const target = event.target
+  if (!target.matches('input, textarea, select')) return
+  window.setTimeout(() => target.scrollIntoView({ block: 'center' }), 250)
+}
 
 type ScreenProps = {
   step?: number
@@ -28,6 +36,7 @@ export function Screen({
   overlay,
   children,
 }: ScreenProps) {
+  const keyboardOpen = useKeyboardOpen()
   const centerContent =
     center ?? (step !== undefined && totalSteps !== undefined ? <ProgressDots step={step} totalSteps={totalSteps} /> : null)
 
@@ -65,9 +74,15 @@ export function Screen({
         </header>
       )}
 
-      <main className="flex-1 overflow-y-auto px-6 pb-4">{children}</main>
+      <main className="flex-1 overflow-y-auto px-6 pb-4" onFocus={scrollFieldIntoView}>
+        {children}
+        {/* Keyboard up: the CTA scrolls with the content instead of riding up over the fields. */}
+        {footer && keyboardOpen && <div className="pt-6 pb-4">{footer}</div>}
+      </main>
 
-      {footer && <footer className="shrink-0 px-6 pt-3 pb-8">{footer}</footer>}
+      {footer && !keyboardOpen && (
+        <footer className="shrink-0 px-6 pt-3 pb-[max(2rem,calc(env(safe-area-inset-bottom)+1rem))]">{footer}</footer>
+      )}
 
       {overlay}
     </div>
