@@ -7,17 +7,43 @@ type ChipProps = {
   disabled?: boolean
   dot?: boolean
   variant?: 'solid' | 'soft' | 'dashed' | 'step'
+  // Step chips only: shown struck through and not tappable (e.g. retinol on a barrier night).
+  skipped?: boolean
 }
 
 const pressable =
   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
-export function Chip({ label, selected = false, onClick, disabled = false, dot = false, variant = 'solid' }: ChipProps) {
+export function Chip({
+  label,
+  selected = false,
+  onClick,
+  disabled = false,
+  dot = false,
+  variant = 'solid',
+  skipped = false,
+}: ChipProps) {
   if (!onClick) {
     return (
       <span className="inline-flex h-11 items-center gap-2 rounded-full bg-tint px-4 text-sm font-medium text-text">
         {dot && <span className="h-1.5 w-1.5 rounded-full bg-accent" />}
         {label}
+      </span>
+    )
+  }
+
+  if (variant === 'step' && skipped) {
+    return (
+      <span
+        aria-label={`${label}, skipped tonight`}
+        className="inline-flex h-11 items-center gap-2 rounded-full border border-dashed border-border pr-4 pl-2.5 text-sm font-medium text-muted"
+      >
+        <span className="flex h-5 w-5 items-center justify-center text-muted" aria-hidden>
+          –
+        </span>
+        <span className="line-through" aria-hidden>
+          {label}
+        </span>
       </span>
     )
   }

@@ -48,7 +48,9 @@ function App() {
   const [state, setState] = useState<AppState>(() => loadAppState(createSkincareActive))
   const [route, setRoute] = useState<Route>(() => ({ name: state.onboardingDone ? 'dashboard' : 'onboarding' }))
   const [direction, setDirection] = useState<1 | -1>(1)
-  const [justSetUp, setJustSetUp] = useState(false)
+  // Dashboard 13 lasts until the user leaves the dashboard; the toast only shows once within it.
+  const [freshSetup, setFreshSetup] = useState(false)
+  const [toastPending, setToastPending] = useState(false)
   const [resetCount, setResetCount] = useState(0)
 
   useEffect(() => {
@@ -56,6 +58,10 @@ function App() {
   }, [state])
 
   function go(name: RouteName, dir: 1 | -1 = 1, moduleId?: string) {
+    if (name !== 'dashboard') {
+      setFreshSetup(false)
+      setToastPending(false)
+    }
     setDirection(dir)
     setRoute({ name, moduleId })
   }
@@ -117,15 +123,17 @@ function App() {
         skincareActive: current.skincareActive ? { ...current.skincareActive, routine: fresh.routine } : fresh,
       }
     })
-    setJustSetUp(true)
     go('dashboard')
+    setFreshSetup(true)
+    setToastPending(true)
   }
 
   function resetDemo() {
     clearDemoStorage()
     document.documentElement.classList.remove('dark')
     setState(initialAppState)
-    setJustSetUp(false)
+    setFreshSetup(false)
+    setToastPending(false)
     setResetCount((count) => count + 1)
     go('onboarding', -1)
   }
@@ -152,10 +160,16 @@ function App() {
       case 'dashboard':
         return (
           <Dashboard
-            mode={state.modulesSetUp.includes('skincare') ? 'skincare-live' : 'day0'}
+            variant={
+              !state.modulesSetUp.includes('skincare') || !state.skincareActive
+                ? 'day0'
+                : freshSetup
+                  ? 'just-set-up'
+                  : 'active'
+            }
             state={state}
-            justSetUp={justSetUp}
-            onToastDone={() => setJustSetUp(false)}
+            showToast={toastPending}
+            onToastDone={() => setToastPending(false)}
             onActiveChange={updateActive}
             onDemoChange={updateDemo}
             onJumpCycle={jumpScanCycle}

@@ -23,6 +23,8 @@ type RowCardProps = {
   trailing?: ReactNode
   onClick: () => void
   children?: ReactNode
+  // Put non-interactive children inside the card's button so the whole card is tappable.
+  childrenInButton?: boolean
 }
 
 type ModuleCardProps = SelectCardProps | RowCardProps
@@ -46,23 +48,29 @@ const rowTone: Record<ModuleRowTone, string> = {
 
 export function ModuleCard(props: ModuleCardProps) {
   if (props.variant === 'row') {
-    const { name, icon, subtitle, tone = 'default', trailing, onClick, children } = props
+    const { name, icon, subtitle, tone = 'default', trailing, onClick, children, childrenInButton = false } = props
+    const headerRow = (
+      <span className="flex w-full items-center gap-3">
+        <IconTile icon={icon} />
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-base font-semibold text-text">{name}</span>
+          {/* Waiting cards sit at 75% opacity; full text color keeps the dimmed subtitle above 4.5:1. */}
+          <span className={['text-sm', tone === 'waiting' ? 'text-text' : 'text-muted'].join(' ')}>{subtitle}</span>
+        </span>
+        {trailing}
+      </span>
+    )
     return (
       <div className={['rounded-[20px] bg-surface transition-opacity duration-300', rowTone[tone]].join(' ')}>
         <button
           type="button"
           onClick={onClick}
-          className={['flex w-full items-center gap-3 rounded-[20px] p-4 text-left', pressable].join(' ')}
+          className={['flex w-full flex-col gap-3 rounded-[20px] p-4 text-left', pressable].join(' ')}
         >
-          <IconTile icon={icon} />
-          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-base font-semibold text-text">{name}</span>
-            {/* Waiting cards sit at 75% opacity; full text color keeps the dimmed subtitle above 4.5:1. */}
-            <span className={['text-sm', tone === 'waiting' ? 'text-text' : 'text-muted'].join(' ')}>{subtitle}</span>
-          </span>
-          {trailing}
+          {headerRow}
+          {childrenInButton && children && <span className="block w-full">{children}</span>}
         </button>
-        {children && <div className="px-4 pb-4">{children}</div>}
+        {!childrenInButton && children && <div className="px-4 pb-4">{children}</div>}
       </div>
     )
   }
