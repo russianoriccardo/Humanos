@@ -1,4 +1,8 @@
 import { initialAnswers, type Answers } from '../onboarding/types'
+import type { HealthScenario, ProductCheck } from '../skincare/engine/types'
+import type { RoutineStep } from '../skincare/routine'
+import { config } from '../config'
+import { dateKey, normalizeKey } from '../lib/dates'
 
 export type SkincareGoal = 'glow' | 'acne' | 'anti-age' | 'sensitivity' | 'maintain'
 
@@ -15,9 +19,40 @@ export type SkincareSetup = {
   completedAt?: string
 }
 
+export type ScanRecord = {
+  date: string
+  reading: SkinReading
+  // IndexedDB key of the photo, only when keepScanPhotos was on at capture time.
+  photoId?: string
+}
+
+// Everything the live Skincare module tracks after setup.
+export type SkincareActive = {
+  // Day 1 of the routine ('YYYY-MM-DD'). Separate from the scan dates so a rescan doesn't reset it.
+  startedAt: string
+  routine: RoutineStep[]
+  baselineScan: ScanRecord & { fromPhoto: boolean }
+  scans: ScanRecord[]
+  keepScanPhotos: boolean
+  routineLog: Record<string, string[]>
+  spfLog: Record<string, boolean>
+  yoga: { sessions: string[] }
+  productChecks: ProductCheck[]
+  seenCoachMark: boolean
+}
+
+export type Reminder = { id: string; at: string; title: string; body: string }
+
 export type UiState = {
-  coachMarkSeen: boolean
-  tonight: { date: string; done: string[] }
+  skincareTab: 'today' | 'yoga' | 'progress' | 'ask'
+  locationChoice: 'unset' | 'gps' | 'city'
+  city: string
+  reminders: Reminder[]
+}
+
+export type DemoState = {
+  scenario: HealthScenario
+  outdoorWindow: { start: string; end: string }
 }
 
 export type AppState = {
@@ -25,6 +60,10 @@ export type AppState = {
   onboardingDone: boolean
   modulesSetUp: string[]
   skincare: SkincareSetup
+  skincareActive: SkincareActive | null
+  // Daily UV peak / humidity low, recorded whenever weather loads. Feeds "SPF on sunny days".
+  weatherLog: Record<string, { uvMax: number; rhMin: number }>
+  demo: DemoState
   ui: UiState
 }
 
@@ -41,9 +80,16 @@ export const initialSkincare: SkincareSetup = {
   scan: null,
 }
 
+export const initialDemo: DemoState = {
+  scenario: 'shortSleepTrained',
+  outdoorWindow: { start: '12:30', end: '13:30' },
+}
+
 const initialUi: UiState = {
-  coachMarkSeen: false,
-  tonight: { date: '', done: [] },
+  skincareTab: 'today',
+  locationChoice: 'unset',
+  city: config.fallbackCity.name,
+  reminders: [],
 }
 
 export const initialAppState: AppState = {
@@ -51,26 +97,53 @@ export const initialAppState: AppState = {
   onboardingDone: false,
   modulesSetUp: [],
   skincare: initialSkincare,
+  skincareActive: null,
+  weatherLog: {},
+  demo: initialDemo,
   ui: initialUi,
 }
 
-export function loadAppState(): AppState {
+type LegacyUi = { coachMarkSeen?: boolean; tonight?: { date: string; done: string[] } }
+
+// `createActive` is injected to keep this module free of the reading/routine logic.
+export function loadAppState(createActive: (setup: SkincareSetup) => SkincareActive): AppState {
   try {
     const raw = localStorage.getItem(STATE_KEY)
     if (raw) {
-      const parsed = JSON.parse(raw) as Partial<AppState>
-      return {
+      const parsed = JSON.parse(raw) as Partial<AppState> & { ui?: Partial<UiState> & LegacyUi }
+      const state: AppState = {
         ...initialAppState,
         ...parsed,
         onboarding: { ...initialAnswers, ...parsed.onboarding },
         skincare: { ...initialSkincare, ...parsed.skincare },
-        ui: { ...initialUi, ...parsed.ui },
+        skincareActive: parsed.skincareActive ?? null,
+        weatherLog: parsed.weatherLog ?? {},
+        demo: { ...initialDemo, ...parsed.demo },
+        ui: {
+          skincareTab: parsed.ui?.skincareTab ?? initialUi.skincareTab,
+          locationChoice: parsed.ui?.locationChoice ?? initialUi.locationChoice,
+          city: parsed.ui?.city ?? initialUi.city,
+          reminders: parsed.ui?.reminders ?? [],
+        },
       }
+      // Set up before SkincareActive existed: build it, carrying over tonight's ticks and the coach mark.
+      if (state.modulesSetUp.includes('skincare') && !state.skincareActive) {
+        const active = createActive(state.skincare)
+        const legacy: LegacyUi = parsed.ui ?? {}
+        const tonight = legacy.tonight
+        const nameToId = new Map(active.routine.map((step) => [step.name, step.id]))
+        if (tonight?.date && tonight.done.length) {
+          active.routineLog[normalizeKey(tonight.date)] = tonight.done.map((name) => nameToId.get(name) ?? name)
+        }
+        active.seenCoachMark = legacy.coachMarkSeen ?? false
+        state.skincareActive = active
+      }
+      return state
     }
-    const legacy = localStorage.getItem(LEGACY_ONBOARDING_KEY)
-    if (legacy) {
+    const legacyOnboarding = localStorage.getItem(LEGACY_ONBOARDING_KEY)
+    if (legacyOnboarding) {
       localStorage.removeItem(LEGACY_ONBOARDING_KEY)
-      return { ...initialAppState, onboarding: { ...initialAnswers, ...JSON.parse(legacy) } }
+      return { ...initialAppState, onboarding: { ...initialAnswers, ...JSON.parse(legacyOnboarding) } }
     }
   } catch {
     // Unreadable or blocked storage: start fresh rather than crash.
@@ -97,6 +170,5 @@ export function clearDemoStorage() {
 }
 
 export function todayKey() {
-  const now = new Date()
-  return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
+  return dateKey()
 }

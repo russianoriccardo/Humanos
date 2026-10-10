@@ -1,5 +1,6 @@
 import type { SkinReading, SkincareSetup } from '../state/appState'
 import { branchOf } from './catalog'
+import { buildRoutine } from './routine'
 import type { FrameStats } from './scan/sampler'
 
 /*
@@ -29,10 +30,6 @@ const GOAL_BASE_TYPE: Record<string, string> = {
 
 function has(list: string[], item: string) {
   return list.some((entry) => entry.toLowerCase() === item.toLowerCase())
-}
-
-export function ownedOrPicked(setup: SkincareSetup) {
-  return branchOf(setup.hasRoutine) === 'A' ? setup.products : setup.wantsToStart
 }
 
 function skinType(setup: SkincareSetup, stats: FrameStats | null) {
@@ -78,7 +75,7 @@ function strengthFor(setup: SkincareSetup) {
 }
 
 function gapFor(setup: SkincareSetup) {
-  const list = branchOf(setup.hasRoutine) === 'A' ? setup.products : buildRoutine(setup).map((step) => step.product)
+  const list = branchOf(setup.hasRoutine) === 'A' ? setup.products : buildRoutine(setup).map((step) => step.name)
   if (!has(list, 'SPF')) return 'No SPF. That is the single biggest lever on how your skin ages.'
   if (!has(list, 'Moisturizer')) return 'No moisturiser yet — your skin barrier is doing all the work alone.'
   if (!has(list, 'Cleanser')) return 'No cleanser — the evening wash is what lets everything else work.'
@@ -95,42 +92,6 @@ export function buildReading(setup: SkincareSetup, stats: FrameStats | null): Sk
 
 export function readingHeadline(reading: SkinReading) {
   return `${reading.type} skin,\n${reading.notes[0]}`
-}
-
-export type RoutineStep = { product: string; timing: 'Morning' | 'Evening' | 'Morning & evening' }
-
-const SELECTION_PRIORITY = ['Cleanser', 'Moisturizer', 'SPF', 'Serum', 'Retinol', 'Toner', 'Exfoliant', 'Face oil']
-const APPLICATION_ORDER = ['Cleanser', 'Toner', 'Serum', 'Retinol', 'Exfoliant', 'Moisturizer', 'Face oil', 'SPF']
-const DEFAULT_ROUTINE = ['Cleanser', 'Serum', 'Moisturizer']
-
-function timingOf(product: string): RoutineStep['timing'] {
-  if (has(['SPF'], product)) return 'Morning'
-  if (has(['Retinol', 'Exfoliant', 'Face oil'], product)) return 'Evening'
-  return 'Morning & evening'
-}
-
-export function buildRoutine(setup: SkincareSetup): RoutineStep[] {
-  const source = setup.noProducts || setup.buildForMe ? [] : ownedOrPicked(setup)
-  const rank = (p: string) => {
-    const i = SELECTION_PRIORITY.findIndex((known) => known.toLowerCase() === p.toLowerCase())
-    return i === -1 ? SELECTION_PRIORITY.length : i
-  }
-  const chosen = [...source].sort((a, b) => rank(a) - rank(b)).slice(0, 3)
-  for (const fallback of DEFAULT_ROUTINE) {
-    if (chosen.length >= 3) break
-    if (!has(chosen, fallback)) chosen.push(fallback)
-  }
-  const order = (p: string) => {
-    const i = APPLICATION_ORDER.findIndex((known) => known.toLowerCase() === p.toLowerCase())
-    return i === -1 ? APPLICATION_ORDER.indexOf('Moisturizer') - 0.5 : i
-  }
-  return chosen.sort((a, b) => order(a) - order(b)).map((product) => ({ product, timing: timingOf(product) }))
-}
-
-export function tonightSteps(setup: SkincareSetup) {
-  return buildRoutine(setup)
-    .filter((step) => step.timing !== 'Morning')
-    .map((step) => step.product)
 }
 
 export type DetectionPill = { label: string; landmark: number }

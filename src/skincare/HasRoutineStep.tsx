@@ -4,7 +4,7 @@ import { SkincareStepScreen } from './SkincareStepScreen'
 import { StepTitle } from './StepTitle'
 import type { SkincareStepProps } from './types'
 
-export function RoutineStep({ setup, onChange, onNext, onBack, onSkip }: SkincareStepProps) {
+export function HasRoutineStep({ setup, onChange, onNext, onBack, onSkip }: SkincareStepProps) {
   return (
     <SkincareStepScreen
       step={1}

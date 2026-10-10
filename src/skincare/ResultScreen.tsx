@@ -4,7 +4,8 @@ import { HintCard } from '../components/HintCard'
 import type { SkincareSetup } from '../state/appState'
 import { SkincareBadge } from './SkincareBadge'
 import { branchOf } from './catalog'
-import { buildReading, buildRoutine, readingHeadline } from './reading'
+import { buildReading, readingHeadline } from './reading'
+import { buildRoutine, timingLabel } from './routine'
 
 type ResultScreenProps = {
   setup: SkincareSetup
@@ -19,7 +20,8 @@ function Eyebrow({ children }: { children: string }) {
 export function ResultScreen({ setup, onBack, onDone }: ResultScreenProps) {
   const scanned = setup.scan?.status === 'ok' && !!setup.scan.reading
   const reading = setup.scan?.reading ?? buildReading(setup, null)
-  const routine = buildRoutine(setup)
+  // The three evening-capable steps; morning-only SPF isn't one of the three.
+  const routine = buildRoutine(setup).filter((step) => step.when !== 'am')
   const isA = branchOf(setup.hasRoutine) === 'A'
   const spfGap = reading.gap.startsWith('No SPF')
 
@@ -50,13 +52,13 @@ export function ResultScreen({ setup, onBack, onDone }: ResultScreenProps) {
           <Eyebrow>{isA ? 'Your first routine' : 'Your starter routine'}</Eyebrow>
           <ol className="flex flex-col gap-3">
             {routine.map((step, index) => (
-              <li key={step.product} className="flex items-center gap-3">
+              <li key={step.id} className="flex items-center gap-3">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-tint text-sm font-semibold text-text">
                   {index + 1}
                 </span>
                 <span className="text-base text-text">
-                  <span className="font-semibold">{step.product}</span>
-                  <span className="text-muted"> · {step.timing}</span>
+                  <span className="font-semibold">{step.name}</span>
+                  <span className="text-muted"> · {timingLabel(step.when)}</span>
                 </span>
               </li>
             ))}

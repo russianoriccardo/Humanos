@@ -8,9 +8,10 @@ import { ModuleCard, type ModuleRowTone } from '../components/ModuleCard'
 import { BottomNav } from '../components/BottomNav'
 import { Chip } from '../components/Chip'
 import { Toast } from '../components/Toast'
+import { DemoPanel } from '../components/DemoPanel'
 import { MODULE_ICONS, moduleName, orderedModules } from '../lib/modules'
-import { todayKey, type AppState, type UiState } from '../state/appState'
-import { tonightSteps } from '../skincare/reading'
+import { todayKey, type AppState, type DemoState, type SkincareActive } from '../state/appState'
+import { eveningSteps } from '../skincare/routine'
 
 export type DashboardMode = 'day0' | 'skincare-live'
 
@@ -19,7 +20,9 @@ type DashboardProps = {
   state: AppState
   justSetUp: boolean
   onToastDone: () => void
-  onUiChange: (patch: Partial<UiState>) => void
+  onActiveChange: (fn: (active: SkincareActive) => SkincareActive) => void
+  onDemoChange: (patch: Partial<DemoState>) => void
+  onJumpCycle: () => void
   onStartModule: (moduleId: string) => void
   onOpenModule: (moduleId: string) => void
   onReset: () => void
@@ -44,25 +47,32 @@ export function Dashboard({
   state,
   justSetUp,
   onToastDone,
-  onUiChange,
+  onActiveChange,
+  onDemoChange,
+  onJumpCycle,
   onStartModule,
   onOpenModule,
   onReset,
 }: DashboardProps) {
-  const [confirmReset, setConfirmReset] = useState(false)
-  const live = mode === 'skincare-live'
+  const [demoOpen, setDemoOpen] = useState(false)
+  const active = state.skincareActive
+  const live = mode === 'skincare-live' && !!active
   const name = state.onboarding.name.trim()
   const modules = orderedModules(state.onboarding.modules)
   const total = modules.length
   const nextModule = modules.find((id) => !state.modulesSetUp.includes(id))
 
-  const steps = tonightSteps(state.skincare)
-  const done = state.ui.tonight.date === todayKey() ? state.ui.tonight.done.filter((s) => steps.includes(s)) : []
-  const showCoachMark = live && !state.ui.coachMarkSeen
+  const today = todayKey()
+  const steps = active ? eveningSteps(active.routine, new Date().getDay()) : []
+  const done = (active?.routineLog[today] ?? []).filter((id) => steps.some((step) => step.id === id))
+  const showCoachMark = live && !active.seenCoachMark
 
-  function toggleStep(step: string) {
-    const next = done.includes(step) ? done.filter((s) => s !== step) : [...done, step]
-    onUiChange({ tonight: { date: todayKey(), done: next } })
+  function toggleStep(id: string) {
+    onActiveChange((a) => {
+      const current = a.routineLog[today] ?? []
+      const next = current.includes(id) ? current.filter((s) => s !== id) : [...current, id]
+      return { ...a, routineLog: { ...a.routineLog, [today]: next } }
+    })
   }
 
   function rowFor(id: string, index: number): { subtitle: string; tone: ModuleRowTone } {
@@ -84,7 +94,7 @@ export function Dashboard({
       </div>
       <div className="flex shrink-0 items-center gap-1">
         <ThemeToggle />
-        <Avatar initial={(name[0] ?? 'H').toUpperCase()} onLongPress={() => setConfirmReset(true)} />
+        <Avatar initial={(name[0] ?? 'H').toUpperCase()} onLongPress={() => setDemoOpen(true)} />
       </div>
     </header>
   )
@@ -98,38 +108,19 @@ export function Dashboard({
           type="button"
           aria-label="Dismiss tip"
           className="absolute inset-0 z-20 cursor-default"
-          onClick={() => onUiChange({ coachMarkSeen: true })}
+          onClick={() => onActiveChange((a) => ({ ...a, seenCoachMark: true }))}
         />
       )}
 
-      {confirmReset && (
-        <div className="absolute inset-0 z-30" onClick={() => setConfirmReset(false)}>
-          <div
-            role="dialog"
-            aria-label="Reset demo"
-            onClick={(event) => event.stopPropagation()}
-            className="absolute top-20 right-6 w-64 rounded-[20px] border border-border bg-surface p-4"
-          >
-            <p className="text-base font-semibold text-text">Reset demo?</p>
-            <p className="mt-1 text-sm text-muted">Clears every answer on this device and restarts onboarding.</p>
-            <div className="mt-4 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setConfirmReset(false)}
-                className="h-11 flex-1 rounded-full border border-border text-sm font-medium text-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={onReset}
-                className="h-11 flex-1 rounded-full bg-cta text-sm font-semibold text-cta-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                Reset
-              </button>
-            </div>
-          </div>
-        </div>
+      {demoOpen && (
+        <DemoPanel
+          demo={state.demo}
+          canJumpCycle={!!active}
+          onChange={onDemoChange}
+          onJumpCycle={onJumpCycle}
+          onReset={onReset}
+          onClose={() => setDemoOpen(false)}
+        />
       )}
     </>
   )
@@ -191,11 +182,11 @@ export function Dashboard({
                     <div role="group" aria-label="Tonight's routine" className="flex flex-wrap gap-2">
                       {steps.map((step) => (
                         <Chip
-                          key={step}
+                          key={step.id}
                           variant="step"
-                          label={step}
-                          selected={done.includes(step)}
-                          onClick={() => toggleStep(step)}
+                          label={step.name}
+                          selected={done.includes(step.id)}
+                          onClick={() => toggleStep(step.id)}
                         />
                       ))}
                     </div>
