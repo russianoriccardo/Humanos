@@ -1,24 +1,37 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { OnboardingFlow } from './onboarding/OnboardingFlow'
 import type { Answers } from './onboarding/types'
 import { StepTransition } from './components/StepTransition'
+import { Toast } from './components/Toast'
 import { Dashboard } from './screens/Dashboard'
 import { ComingNext } from './screens/ComingNext'
+import { SkincareModule } from './screens/SkincareModule'
 import { HasRoutineStep } from './skincare/HasRoutineStep'
 import { InventoryStep } from './skincare/InventoryStep'
 import { GoalStep } from './skincare/GoalStep'
 import { ScanStep } from './skincare/scan/ScanStep'
 import { ResultScreen } from './skincare/ResultScreen'
 import { createSkincareActive, SCAN_CYCLE_DAYS } from './skincare/active'
+import type { Tip } from './skincare/engine/types'
 import { WeatherProvider } from './state/weather'
 import { addDays, dateKey } from './lib/dates'
 import {
+  makeReminder,
+  reminderIdFor,
+  requestPermission,
+  showSystemNotification,
+  splitDue,
+  todayAt,
+} from './services/reminders'
+import {
   clearDemoStorage,
   initialAppState,
+  initialSkincare,
   loadAppState,
   saveAppState,
   type AppState,
   type DemoState,
+  type Reminder,
   type SkincareActive,
   type SkincareSetup,
   type UiState,
@@ -27,6 +40,7 @@ import {
 type RouteName =
   | 'onboarding'
   | 'dashboard'
+  | 'skincare'
   | 'skincare/routine'
   | 'skincare/inventory'
   | 'skincare/goal'
@@ -44,6 +58,8 @@ const SKINCARE_FLOW: RouteName[] = [
   'skincare/result',
 ]
 
+type Alert = { message: string; detail?: string; icon?: 'check' | 'bell' }
+
 function App() {
   const [state, setState] = useState<AppState>(() => loadAppState(createSkincareActive))
   const [route, setRoute] = useState<Route>(() => ({ name: state.onboardingDone ? 'dashboard' : 'onboarding' }))
@@ -51,6 +67,10 @@ function App() {
   // Dashboard 13 lasts until the user leaves the dashboard; the toast only shows once within it.
   const [freshSetup, setFreshSetup] = useState(false)
   const [toastPending, setToastPending] = useState(false)
+  // "Edit routine" re-runs setup and should come back to the module, not the dashboard.
+  const [editingRoutine, setEditingRoutine] = useState(false)
+  const [moduleToast, setModuleToast] = useState<string | null>(null)
+  const [alert, setAlert] = useState<Alert | null>(null)
   const [resetCount, setResetCount] = useState(0)
 
   useEffect(() => {
@@ -70,7 +90,10 @@ function App() {
     const index = SKINCARE_FLOW.indexOf(route.name)
     const target = SKINCARE_FLOW[index + offset]
     if (target) go(target, offset)
-    else go('dashboard', -1)
+    else if (editingRoutine) {
+      setEditingRoutine(false)
+      go('skincare', -1)
+    } else go('dashboard', -1)
   }
 
   const updateOnboarding = (patch: Partial<Answers>) =>
@@ -87,6 +110,9 @@ function App() {
   const updateActive = (fn: (active: SkincareActive) => SkincareActive) =>
     setState((current) => (current.skincareActive ? { ...current, skincareActive: fn(current.skincareActive) } : current))
 
+  const setReminders = (fn: (reminders: Reminder[]) => Reminder[]) =>
+    setState((current) => ({ ...current, ui: { ...current.ui, reminders: fn(current.ui.reminders) } }))
+
   const logWeather = (date: string, uvMax: number, rhMin: number) =>
     setState((current) => {
       const prev = current.weatherLog[date]
@@ -95,6 +121,41 @@ function App() {
       if (prev && prev.uvMax === entry.uvMax && prev.rhMin === entry.rhMin) return current
       return { ...current, weatherLog: { ...current.weatherLog, [date]: entry } }
     })
+
+  // --- Reminders: fire while the app is open; catch up on ones missed while it was closed. ---
+  const firedRef = useRef(new Set<string>())
+  useEffect(() => {
+    const { due, expired, upcoming } = splitDue(state.ui.reminders)
+    if (due.length || expired.length) {
+      for (const reminder of due) {
+        if (firedRef.current.has(reminder.id)) continue
+        firedRef.current.add(reminder.id)
+        showSystemNotification(reminder)
+        setAlert({ message: reminder.title, detail: reminder.body, icon: 'bell' })
+      }
+      setReminders((list) => list.filter((r) => !due.includes(r) && !expired.includes(r)))
+      return
+    }
+    if (!upcoming.length) return
+    const next = Math.min(...upcoming.map((r) => Date.parse(r.at)))
+    // setTimeout caps at ~24.8 days; re-evaluate before that.
+    const timer = window.setTimeout(() => setReminders((list) => [...list]), Math.min(next - Date.now() + 250, 2 ** 31 - 1))
+    return () => window.clearTimeout(timer)
+  }, [state.ui.reminders])
+
+  async function remindForTip(tip: Tip) {
+    if (!tip.action) return
+    const reminder = makeReminder(
+      reminderIdFor(tip, dateKey()),
+      todayAt(tip.action.at),
+      'Time to reapply SPF',
+      tip.body.replace(/ Reapply SPF around .*$/, ' Reapply now.'),
+    )
+    setReminders((list) => [...list.filter((r) => r.id !== reminder.id), reminder])
+    setModuleToast(`Reminder set for ${tip.action.at}`)
+    // Asked here because it needs a tap; the reminder works in-app either way.
+    await requestPermission()
+  }
 
   // Demo: move the latest scan back so today is day 14 and the rescan unlocks.
   function jumpScanCycle() {
@@ -112,8 +173,9 @@ function App() {
   }
 
   function completeSkincare() {
+    const editing = editingRoutine
     setState((current) => {
-      const skincare = { ...current.skincare, completedAt: new Date().toISOString() }
+      const skincare = { ...current.skincare, completedAt: current.skincare.completedAt ?? new Date().toISOString() }
       const fresh = createSkincareActive(skincare)
       return {
         ...current,
@@ -123,9 +185,31 @@ function App() {
         skincareActive: current.skincareActive ? { ...current.skincareActive, routine: fresh.routine } : fresh,
       }
     })
+    if (editing) {
+      setEditingRoutine(false)
+      go('skincare')
+      setModuleToast('Routine updated')
+      return
+    }
     go('dashboard')
     setFreshSetup(true)
     setToastPending(true)
+  }
+
+  function editRoutine() {
+    setEditingRoutine(true)
+    go('skincare/routine')
+  }
+
+  function resetModule() {
+    setState((current) => ({
+      ...current,
+      modulesSetUp: current.modulesSetUp.filter((id) => id !== 'skincare'),
+      skincare: initialSkincare,
+      skincareActive: null,
+      ui: { ...current.ui, reminders: [], skincareTab: 'today' },
+    }))
+    go('dashboard', -1)
   }
 
   function resetDemo() {
@@ -134,6 +218,7 @@ function App() {
     setState(initialAppState)
     setFreshSetup(false)
     setToastPending(false)
+    setEditingRoutine(false)
     setResetCount((count) => count + 1)
     go('onboarding', -1)
   }
@@ -176,10 +261,28 @@ function App() {
             onStartModule={(moduleId) =>
               moduleId === 'skincare' ? go('skincare/routine') : go('module/home', 1, moduleId)
             }
-            onOpenModule={(moduleId) => go('module/home', 1, moduleId)}
+            onOpenModule={(moduleId) => (moduleId === 'skincare' ? go('skincare') : go('module/home', 1, moduleId))}
             onReset={resetDemo}
           />
         )
+      case 'skincare':
+        return state.skincareActive ? (
+          <SkincareModule
+            state={state}
+            tab={state.ui.skincareTab}
+            toast={moduleToast}
+            hasScanPhotos={false}
+            onToastDone={() => setModuleToast(null)}
+            onTabChange={(tab) => updateUi({ skincareTab: tab })}
+            onBack={() => go('dashboard', -1)}
+            onActiveChange={updateActive}
+            onRemind={remindForTip}
+            onRemoveReminder={(id) => setReminders((list) => list.filter((r) => r.id !== id))}
+            onEditRoutine={editRoutine}
+            onResetModule={resetModule}
+            onDeletePhotos={() => undefined}
+          />
+        ) : null
       case 'skincare/routine':
         return <HasRoutineStep {...stepProps} />
       case 'skincare/inventory':
@@ -211,6 +314,16 @@ function App() {
           >
             {screen}
           </StepTransition>
+          {alert && (
+            <Toast
+              key={alert.message + alert.detail}
+              message={alert.message}
+              detail={alert.detail}
+              icon={alert.icon}
+              duration={6000}
+              onDone={() => setAlert(null)}
+            />
+          )}
         </div>
       </div>
     </WeatherProvider>

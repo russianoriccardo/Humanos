@@ -103,8 +103,10 @@ export function getPosition(): Promise<{ lat: number; lon: number }> {
       reject(new Error('unsupported'))
       return
     }
+    // Rounded to 2 decimals (~1 km) before it's sent anywhere: plenty for weather, less revealing.
+    const round = (n: number) => Math.round(n * 100) / 100
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      (pos) => resolve({ lat: round(pos.coords.latitude), lon: round(pos.coords.longitude) }),
       (error) => reject(error),
       // Coarse is enough for weather, and faster / kinder on battery.
       { enableHighAccuracy: false, timeout: 10_000, maximumAge: 30 * 60_000 },
