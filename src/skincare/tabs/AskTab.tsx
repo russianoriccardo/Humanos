@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowUp, Camera, Image as ImageIcon, Paperclip, ScanBarcode, Type, X } from 'lucide-react'
 import { SkeletonCard } from '../../components/Skeleton'
 import { HintCard } from '../../components/HintCard'
@@ -63,6 +63,12 @@ export function AskTab({ state, onActiveChange, onToast }: AskTabProps) {
   const [focusId, setFocusId] = useState<string | null>(null)
   const [composer, setComposer] = useState('')
   const [asking, setAsking] = useState(false)
+  const resultRef = useRef<HTMLDivElement>(null)
+
+  // Results land below the input tiles — on a phone that's under the fold, so bring them into view.
+  useEffect(() => {
+    if (busy || notice || focusId) resultRef.current?.scrollIntoView({ block: 'start' })
+  }, [busy, notice, focusId])
   if (!active) return null
 
   const checks = active.productChecks
@@ -107,7 +113,8 @@ export function AskTab({ state, onActiveChange, onToast }: AskTabProps) {
     setBusy({ label: 'Looking it up…' })
     setNotice(null)
     try {
-      const found = await lookupBarcode(code)
+      // Never leave "Looking it up…" spinning: give up after 10s and offer the photo route.
+      const found = await lookupBarcode(code, AbortSignal.timeout(10_000))
       if (found) runCheck('barcode', found.productName, found.ingredients, false)
       else {
         setNotice({
@@ -230,6 +237,7 @@ export function AskTab({ state, onActiveChange, onToast }: AskTabProps) {
         )}
       </section>
 
+      <div ref={resultRef} className="flex scroll-mt-4 flex-col gap-5">
       {checks.length === 0 && !busy && <HintCard>Try it on something you saw today — an ad, a reel, a shelf.</HintCard>}
 
       {busy && (
@@ -275,6 +283,8 @@ export function AskTab({ state, onActiveChange, onToast }: AskTabProps) {
           {asking && <SkeletonCard lines={2} />}
         </section>
       )}
+
+      </div>
 
       {earlier.length > 0 && (
         <section className="flex flex-col gap-2">
