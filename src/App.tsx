@@ -5,7 +5,10 @@ import { StepTransition } from './components/StepTransition'
 import { Toast } from './components/Toast'
 import { Dashboard } from './screens/Dashboard'
 import { ComingNext } from './screens/ComingNext'
-import { SkincareModule } from './screens/SkincareModule'
+import { SkincareModule, type ModuleTabRender } from './screens/SkincareModule'
+import { YogaPlayer } from './screens/YogaPlayer'
+import { FaceYogaTab } from './skincare/tabs/FaceYogaTab'
+import { thisWeek, yogaStreak } from './skincare/yoga/stats'
 import { HasRoutineStep } from './skincare/HasRoutineStep'
 import { InventoryStep } from './skincare/InventoryStep'
 import { GoalStep } from './skincare/GoalStep'
@@ -41,6 +44,7 @@ type RouteName =
   | 'onboarding'
   | 'dashboard'
   | 'skincare'
+  | 'skincare/yoga'
   | 'skincare/routine'
   | 'skincare/inventory'
   | 'skincare/goal'
@@ -223,6 +227,13 @@ function App() {
     go('onboarding', -1)
   }
 
+  const renderTab: ModuleTabRender = (tab) => {
+    const active = state.skincareActive
+    if (!active) return null
+    if (tab === 'yoga') return { content: <FaceYogaTab active={active} onStart={() => go('skincare/yoga')} /> }
+    return null
+  }
+
   const stepProps = {
     setup: state.skincare,
     onChange: updateSkincare,
@@ -281,6 +292,16 @@ function App() {
             onEditRoutine={editRoutine}
             onResetModule={resetModule}
             onDeletePhotos={() => undefined}
+            renderTab={renderTab}
+          />
+        ) : null
+      case 'skincare/yoga':
+        return state.skincareActive ? (
+          <YogaPlayer
+            streak={yogaStreak(state.skincareActive.yoga.sessions)}
+            weekCount={thisWeek(state.skincareActive.yoga.sessions).count}
+            onComplete={() => updateActive((a) => ({ ...a, yoga: { sessions: [...a.yoga.sessions, new Date().toISOString()] } }))}
+            onExit={() => go('skincare', -1)}
           />
         ) : null
       case 'skincare/routine':
