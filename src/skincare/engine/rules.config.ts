@@ -5,8 +5,6 @@ export const rules = {
   today: {
     // UV reapply: peak UV inside the outdoor window at or above this.
     uvReapplyMin: 6,
-    // Reapply this many minutes before the window starts.
-    reapplyLeadMinutes: 15,
     // "Low UV today" when the day's peak is below this.
     lowUvBelow: 3,
     // Barrier night: slept less than this (minutes) AND trained yesterday.

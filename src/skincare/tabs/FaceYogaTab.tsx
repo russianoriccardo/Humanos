@@ -21,6 +21,7 @@ export function FaceYogaTab({ active, onStart }: FaceYogaTabProps) {
   const streak = yogaStreak(active.yoga.sessions)
   const week = thisWeek(active.yoga.sessions)
   const minutes = Math.round(sessionSeconds(session) / 60)
+  const first = active.yoga.sessions.length === 0
 
   return (
     <div className="flex flex-col gap-5">
@@ -28,7 +29,7 @@ export function FaceYogaTab({ active, onStart }: FaceYogaTabProps) {
 
       <section className="flex flex-col gap-4 rounded-[20px] bg-cta p-5 text-cta-text">
         <div className="flex flex-col gap-1">
-          <p className="text-[11px] font-semibold tracking-[1.5px] uppercase">Today's session · {minutes} min</p>
+          <p className="text-[11px] font-semibold tracking-[1.5px] uppercase">{first ? `Your first session · ${minutes} min` : `Today's session · ${minutes} min`}</p>
           <p className="text-[22px] leading-tight font-bold">{session.title}</p>
           <p className="text-sm">{session.bestTime}</p>
         </div>
@@ -39,12 +40,14 @@ export function FaceYogaTab({ active, onStart }: FaceYogaTabProps) {
             className={`inline-flex h-12 items-center gap-2 rounded-full bg-cta-text px-5 text-sm font-semibold text-cta transition-transform duration-[120ms] motion-safe:active:scale-[0.97] ${focusRing}`}
           >
             <Play size={16} fill="currentColor" aria-hidden />
-            Start session
+            {first ? 'Start your first session' : 'Start session'}
           </button>
-          <span className="inline-flex items-center gap-1.5 text-sm font-semibold">
-            <Flame size={16} aria-hidden />
-            {streak > 0 ? `${streak}-day streak` : 'Start a streak today'}
-          </span>
+          {streak >= 2 && (
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold">
+              <Flame size={16} aria-hidden />
+              {streak}-day streak
+            </span>
+          )}
         </div>
       </section>
 

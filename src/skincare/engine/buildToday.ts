@@ -37,7 +37,8 @@ function evaluateRules(ctx: TodayContext, tonight: AdjustedStep[]): Rule[] {
   if (weather && nowMinutes < outdoorWindow.end) {
     const peak = peakUvInWindow(weather.hourly, outdoorWindow.start, outdoorWindow.end)
     if (peak >= R.uvReapplyMin) {
-      const at = formatClock(Math.max(0, outdoorWindow.start - R.reapplyLeadMinutes))
+      // Halfway through the time outside (12:30–13:30 → 13:00).
+      const at = formatClock(Math.round((outdoorWindow.start + outdoorWindow.end) / 2))
       fired.push({
         tip: {
           id: 'uv-reapply',

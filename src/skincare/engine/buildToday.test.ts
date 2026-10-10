@@ -58,8 +58,8 @@ describe('UV reapply (safety)', () => {
       icon: 'sun',
       metric: 'UV 7',
       source: "Weather · you're outside 12:30–13:30",
-      body: "UV is 7 and you're outside at lunch. Reapply SPF around 12:15.",
-      action: { kind: 'reminder', label: 'Remind me at 12:15', at: '12:15' },
+      body: "UV is 7 and you're outside at lunch. Reapply SPF around 13:00.",
+      action: { kind: 'reminder', label: 'Remind me at 13:00', at: '13:00' },
       routineChanged: false,
     })
   })

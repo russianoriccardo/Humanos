@@ -94,7 +94,7 @@ export function YogaPlayer({ streak, weekCount, onComplete, onExit }: YogaPlayer
           <div className="flex flex-col gap-2">
             <h1 className="text-[28px] leading-tight font-bold text-text">Session done</h1>
             <p className="text-base text-muted">
-              {streak}-day streak · {weekCount} of {session.weeklyGoal} this week
+              {streak >= 2 ? `${streak}-day streak · ` : ''}{weekCount} of {session.weeklyGoal} this week
             </p>
           </div>
         </div>
