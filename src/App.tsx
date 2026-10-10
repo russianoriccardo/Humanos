@@ -23,6 +23,7 @@ import { createSkincareActive, SCAN_CYCLE_DAYS } from './skincare/active'
 import type { Tip } from './skincare/engine/types'
 import { WeatherProvider } from './state/weather'
 import { addDays, dateKey } from './lib/dates'
+import { typedNameVerdict } from './skincare/ask/typedVerdict'
 import {
   makeReminder,
   reminderIdFor,
@@ -209,6 +210,45 @@ function App() {
   }
 
   // Demo: move the latest scan back so today is day 14 and the rescan unlocks.
+  // Demo: nine days of use for pitches — day 9, 7 of 9 nights logged, 4 yoga sessions (3-day streak),
+  // one glycolic toner check. Today is left unlogged so "tonight" is still open.
+  function simulateNineDays() {
+    const today = dateKey()
+    const start = addDays(today, -8)
+    updateActive((a) => {
+      const evening = a.routine.filter((s) => s.when !== 'am').map((s) => s.id)
+      const missed = addDays(today, -5)
+      const routineLog: Record<string, string[]> = {}
+      for (let i = 8; i >= 1; i--) {
+        const day = addDays(today, -i)
+        if (day !== missed) routineLog[day] = evening
+      }
+      const yoga = [-5, -3, -2, -1].map((offset) => new Date(`${addDays(today, offset)}T08:00:00`).toISOString())
+      const name = 'Glow toner · 7% glycolic acid'
+      const check = {
+        id: `check-${Date.now()}`,
+        date: new Date().toISOString(),
+        source: 'text' as const,
+        productName: name,
+        ingredients: [],
+        verdict: typedNameVerdict(name, state.skincare.goal, a.routine, { humidity: null, uvMax: null }),
+        demo: true,
+      }
+      return {
+        ...a,
+        startedAt: start,
+        baselineScan: { ...a.baselineScan, date: start },
+        scans: [],
+        routineLog,
+        yoga: { sessions: yoga },
+        productChecks: [check],
+        seenCoachMark: true,
+      }
+    })
+    setFreshSetup(false)
+    setToastPending(false)
+  }
+
   function jumpScanCycle() {
     const target = addDays(dateKey(), -(SCAN_CYCLE_DAYS - 1))
     updateActive((active) =>
@@ -341,6 +381,7 @@ function App() {
             onActiveChange={updateActive}
             onDemoChange={updateDemo}
             onJumpCycle={jumpScanCycle}
+            onSimulate={simulateNineDays}
             onStartModule={(moduleId) =>
               moduleId === 'skincare' ? go('skincare/routine') : go('module/home', 1, moduleId)
             }

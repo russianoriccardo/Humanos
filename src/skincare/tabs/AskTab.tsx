@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { ArrowUp, Camera, Image as ImageIcon, Paperclip, ScanBarcode, Type, X } from 'lucide-react'
 import { SkeletonCard } from '../../components/Skeleton'
+import { HintCard } from '../../components/HintCard'
+import { typedNameVerdict } from '../ask/typedVerdict'
 import type { AppState, SkincareActive } from '../../state/appState'
 import { useWeather } from '../../state/weather'
 import { lookupBarcode } from '../../services/productLookup'
@@ -68,12 +70,11 @@ export function AskTab({ state, onActiveChange, onToast }: AskTabProps) {
   const earlier = checks.filter((c) => c.id !== current?.id)
 
   function runCheck(source: ProductSource, productName: string, ingredients: string[], demo: boolean) {
-    const verdict = analyzeProduct(
-      { productName, ingredients },
-      { goal: state.skincare.goal },
-      active!.routine,
-      { humidity: usableWeather?.current.humidity ?? null, uvMax: usableWeather?.uvMax ?? null },
-    )
+    const today = { humidity: usableWeather?.current.humidity ?? null, uvMax: usableWeather?.uvMax ?? null }
+    const verdict =
+      source === 'text' && ingredients.length === 0
+        ? typedNameVerdict(productName, state.skincare.goal, active!.routine, today)
+        : analyzeProduct({ productName, ingredients }, { goal: state.skincare.goal }, active!.routine, today)
     const check: ProductCheck = { id: `check-${Date.now()}`, date: new Date().toISOString(), source, productName, ingredients, verdict, demo }
     onActiveChange((a) => ({ ...a, productChecks: [check, ...a.productChecks].slice(0, MAX_CHECKS) }))
     setFocusId(check.id)
@@ -228,6 +229,8 @@ export function AskTab({ state, onActiveChange, onToast }: AskTabProps) {
           </form>
         )}
       </section>
+
+      {checks.length === 0 && !busy && <HintCard>Try it on something you saw today — an ad, a reel, a shelf.</HintCard>}
 
       {busy && (
         <div aria-live="polite" aria-busy="true" className="flex flex-col gap-2">

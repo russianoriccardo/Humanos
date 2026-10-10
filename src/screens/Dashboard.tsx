@@ -30,6 +30,7 @@ type DashboardProps = {
   onActiveChange: (fn: (active: SkincareActive) => SkincareActive) => void
   onDemoChange: (patch: Partial<DemoState>) => void
   onJumpCycle: () => void
+  onSimulate: () => void
   onStartModule: (moduleId: string) => void
   onOpenModule: (moduleId: string) => void
   onReset: () => void
@@ -54,6 +55,7 @@ export function Dashboard({
   onActiveChange,
   onDemoChange,
   onJumpCycle,
+  onSimulate,
   onStartModule,
   onOpenModule,
   onReset,
@@ -137,6 +139,7 @@ export function Dashboard({
           canJumpCycle={!!active}
           onChange={onDemoChange}
           onJumpCycle={onJumpCycle}
+          onSimulate={onSimulate}
           onReset={onReset}
           onClose={() => setDemoOpen(false)}
         />

@@ -130,15 +130,21 @@ export function ProgressTab({ state, scanReminderSet, onRemindScan, onToggleKeep
 
       <section className="flex flex-col gap-4 rounded-[20px] border border-border bg-surface p-5">
         <Eyebrow>Between scans · what you control</Eyebrow>
-        <Bar label="Routine nights" value={`${stats.nights.done} of ${stats.nights.of}`} done={stats.nights.done} of={stats.nights.of} />
-        <Bar
-          label="SPF on sunny days"
-          value={stats.spf.of ? `${stats.spf.done} of ${stats.spf.of}` : 'No sunny days yet'}
-          done={stats.spf.done}
-          of={stats.spf.of}
-        />
-        <Bar label="Face yoga" value={`${stats.yoga.done} ${stats.yoga.done === 1 ? 'session' : 'sessions'}`} done={stats.yoga.done} of={stats.yoga.of} />
-        <p className="text-sm text-muted">Consistency is the best predictor of what your next scan will show.</p>
+        {stats.nights.done + stats.spf.done + stats.yoga.done === 0 ? (
+          <p className="text-sm text-text">Your first logs show up here tonight.</p>
+        ) : (
+          <>
+            <Bar label="Routine nights" value={`${stats.nights.done} of ${stats.nights.of}`} done={stats.nights.done} of={stats.nights.of} />
+            <Bar
+              label="SPF on sunny days"
+              value={stats.spf.of ? `${stats.spf.done} of ${stats.spf.of}` : 'No sunny days yet'}
+              done={stats.spf.done}
+              of={stats.spf.of}
+            />
+            <Bar label="Face yoga" value={`${stats.yoga.done} ${stats.yoga.done === 1 ? 'session' : 'sessions'}`} done={stats.yoga.done} of={stats.yoga.of} />
+            <p className="text-sm text-muted">Consistency is the best predictor of what your next scan will show.</p>
+          </>
+        )}
       </section>
 
       <section className="flex flex-col gap-3">
