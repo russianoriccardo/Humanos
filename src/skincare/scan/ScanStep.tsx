@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { FaceLandmarker } from '@mediapipe/tasks-vision'
 import { CameraOff, Check, Lock, TriangleAlert } from 'lucide-react'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { SecondaryButton } from '../../components/SecondaryButton'
+import { Screen } from '../../components/Screen'
 import { SkincareStepScreen } from '../SkincareStepScreen'
 import { StepTitle } from '../StepTitle'
 import type { SkincareStepProps } from '../types'
@@ -53,7 +54,17 @@ function Guide({ ready }: { ready: boolean }) {
   )
 }
 
-export function ScanStep({ setup, onChange, onNext, onBack }: SkincareStepProps) {
+// The 14-day rescan reuses this screen: different header and copy, and it hands the reading
+// (plus a photo only if the user opted in) back instead of writing to the setup answers.
+export type RescanMode = {
+  keepPhoto: boolean
+  onDone: (reading: SkinReading, photo: Blob | null) => void
+  onCancel: () => void
+}
+
+type ScanStepProps = SkincareStepProps & { rescan?: RescanMode }
+
+export function ScanStep({ setup, onChange, onNext, onBack, rescan }: ScanStepProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const photoRef = useRef<HTMLCanvasElement>(null)
   const landmarkerRef = useRef<FaceLandmarker | null>(null)
@@ -212,6 +223,10 @@ export function ScanStep({ setup, onChange, onNext, onBack }: SkincareStepProps)
   function skipScan() {
     stopCamera()
     releasePhoto()
+    if (rescan) {
+      rescan.onCancel()
+      return
+    }
     onChange({ scan: { status: 'skipped' } })
     onNext()
   }
@@ -227,8 +242,19 @@ export function ScanStep({ setup, onChange, onNext, onBack }: SkincareStepProps)
     startCamera()
   }
 
-  function finish() {
+  async function finish() {
     if (!reading) return
+    if (rescan) {
+      // Only turned into a file when the user opted in; otherwise the frame is just discarded.
+      const canvas = photoRef.current
+      const photo =
+        rescan.keepPhoto && canvas && canvas.width > 0
+          ? await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85))
+          : null
+      releasePhoto()
+      rescan.onDone(reading, photo)
+      return
+    }
     releasePhoto()
     onChange({ scan: { status: 'ok', reading } })
     onNext()
@@ -239,7 +265,9 @@ export function ScanStep({ setup, onChange, onNext, onBack }: SkincareStepProps)
   const starting = phase === 'intro' && !cameraOff && (camera !== 'live' || detector === 'loading')
 
   const copy = {
-    intro: { title: 'Let the AI see your skin', subtitle: 'One photo in natural light is enough.' },
+    intro: rescan
+      ? { title: 'Your 14-day scan', subtitle: 'Same window, same light, no makeup.' }
+      : { title: 'Let the AI see your skin', subtitle: 'One photo in natural light is enough.' },
     processing: { title: 'Reading your photo', subtitle: 'This happens on your device.' },
     complete: { title: 'Scan complete', subtitle: "Here's what we picked up." },
     rejected: { title: "We couldn't read that one", subtitle: "Nothing wrong with you — the photo just isn't usable." },
@@ -247,20 +275,41 @@ export function ScanStep({ setup, onChange, onNext, onBack }: SkincareStepProps)
 
   const footer = (() => {
     if (phase === 'processing') return <PrimaryButton disabled>Analyzing…</PrimaryButton>
-    if (phase === 'complete') return <PrimaryButton onClick={finish}>See my starting point</PrimaryButton>
+    if (phase === 'complete') {
+      return <PrimaryButton onClick={finish}>{rescan ? 'Save this scan' : 'See my starting point'}</PrimaryButton>
+    }
     const taking = phase === 'intro' && !cameraOff
     return (
       <div className="flex flex-col items-center gap-2">
         <PrimaryButton onClick={taking ? capture : retake} disabled={taking && !ready}>
           {taking ? 'Take photo' : phase === 'rejected' ? 'Retake photo' : 'Try again'}
         </PrimaryButton>
-        <SecondaryButton onClick={skipScan}>{taking ? 'Skip for now' : 'Continue without a scan'}</SecondaryButton>
+        <SecondaryButton onClick={skipScan}>
+          {rescan ? 'Not now' : taking ? 'Skip for now' : 'Continue without a scan'}
+        </SecondaryButton>
       </div>
     )
   })()
 
-  return (
-    <SkincareStepScreen step={4} onBack={onBack} onSkip={skipScan} footer={footer}>
+  // A plain function, not a component: a component defined here would be a new type every render
+  // and remount the subtree, killing the camera <video> and the captured canvas.
+  const wrap = (children: ReactNode) =>
+    rescan ? (
+      <Screen
+        center={<span className="text-sm font-semibold text-text">14-day scan</span>}
+        showThemeToggle={false}
+        onBack={skipScan}
+        footer={footer}
+      >
+        {children}
+      </Screen>
+    ) : (
+      <SkincareStepScreen step={4} onBack={onBack} onSkip={skipScan} footer={footer}>
+        {children}
+      </SkincareStepScreen>
+    )
+
+  return wrap(
       <div className="flex flex-col gap-5">
         <StepTitle title={copy.title} subtitle={copy.subtitle} />
 
@@ -372,7 +421,11 @@ export function ScanStep({ setup, onChange, onNext, onBack }: SkincareStepProps)
             <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent">
               <Check size={12} strokeWidth={3} />
             </span>
-            <p className="text-sm text-text">Photo analyzed and discarded. Only the reading is saved.</p>
+            <p className="text-sm text-text">
+              {rescan?.keepPhoto
+                ? 'Photo saved on this device only. Delete anytime in Settings.'
+                : 'Photo analyzed and discarded. Only the reading is saved.'}
+            </p>
           </div>
         )}
 
@@ -389,7 +442,6 @@ export function ScanStep({ setup, onChange, onNext, onBack }: SkincareStepProps)
             </ul>
           </div>
         )}
-      </div>
-    </SkincareStepScreen>
+      </div>,
   )
 }

@@ -8,7 +8,11 @@ import { ComingNext } from './screens/ComingNext'
 import { SkincareModule, type ModuleTabRender } from './screens/SkincareModule'
 import { YogaPlayer } from './screens/YogaPlayer'
 import { FaceYogaTab } from './skincare/tabs/FaceYogaTab'
+import { ProgressTab } from './skincare/tabs/ProgressTab'
+import { PrimaryButton } from './components/PrimaryButton'
 import { thisWeek, yogaStreak } from './skincare/yoga/stats'
+import { daysUntilScan, latestScan } from './skincare/active'
+import { deleteAllPhotos, photoCount, savePhoto } from './services/photoStore'
 import { HasRoutineStep } from './skincare/HasRoutineStep'
 import { InventoryStep } from './skincare/InventoryStep'
 import { GoalStep } from './skincare/GoalStep'
@@ -35,6 +39,7 @@ import {
   type AppState,
   type DemoState,
   type Reminder,
+  type SkinReading,
   type SkincareActive,
   type SkincareSetup,
   type UiState,
@@ -45,6 +50,7 @@ type RouteName =
   | 'dashboard'
   | 'skincare'
   | 'skincare/yoga'
+  | 'skincare/rescan'
   | 'skincare/routine'
   | 'skincare/inventory'
   | 'skincare/goal'
@@ -76,10 +82,17 @@ function App() {
   const [moduleToast, setModuleToast] = useState<string | null>(null)
   const [alert, setAlert] = useState<Alert | null>(null)
   const [resetCount, setResetCount] = useState(0)
+  const [photoTotal, setPhotoTotal] = useState(0)
 
   useEffect(() => {
     saveAppState(state)
   }, [state])
+
+  // Whether "Delete scan photos" should appear in the module menu.
+  const refreshPhotoCount = () => photoCount().then(setPhotoTotal)
+  useEffect(() => {
+    if (route.name === 'skincare') refreshPhotoCount()
+  }, [route.name])
 
   function go(name: RouteName, dir: 1 | -1 = 1, moduleId?: string) {
     if (name !== 'dashboard') {
@@ -161,6 +174,39 @@ function App() {
     await requestPermission()
   }
 
+  async function remindForScan(dayKey: string) {
+    const reminder = makeReminder(
+      `scan:${dayKey}`,
+      new Date(`${dayKey}T09:00:00`).toISOString(),
+      'Your 14-day scan',
+      'Same window, same light, no makeup — so the comparison is fair.',
+    )
+    setReminders((list) => [...list.filter((r) => r.id !== reminder.id), reminder])
+    setModuleToast('Reminder set for 09:00')
+    await requestPermission()
+  }
+
+  async function saveRescan(reading: SkinReading, photo: Blob | null) {
+    const id = `scan-${Date.now()}`
+    // The photo is stored only if the user opted in AND the save worked; otherwise it's gone.
+    const stored = photo ? await savePhoto(id, photo) : false
+    updateActive((a) => ({ ...a, scans: [...a.scans, { date: dateKey(), reading, ...(stored ? { photoId: id } : {}) }] }))
+    updateUi({ skincareTab: 'progress' })
+    go('skincare', -1)
+    setModuleToast('Scan saved')
+  }
+
+  async function deletePhotos() {
+    await deleteAllPhotos()
+    updateActive((a) => ({
+      ...a,
+      baselineScan: { ...a.baselineScan, photoId: undefined },
+      scans: a.scans.map((scan) => ({ ...scan, photoId: undefined })),
+    }))
+    setPhotoTotal(0)
+    setModuleToast('Scan photos deleted')
+  }
+
   // Demo: move the latest scan back so today is day 14 and the rescan unlocks.
   function jumpScanCycle() {
     const target = addDays(dateKey(), -(SCAN_CYCLE_DAYS - 1))
@@ -206,6 +252,8 @@ function App() {
   }
 
   function resetModule() {
+    deleteAllPhotos()
+    setPhotoTotal(0)
     setState((current) => ({
       ...current,
       modulesSetUp: current.modulesSetUp.filter((id) => id !== 'skincare'),
@@ -218,6 +266,9 @@ function App() {
 
   function resetDemo() {
     clearDemoStorage()
+    // Photos live in IndexedDB, which clearing localStorage doesn't touch.
+    deleteAllPhotos()
+    setPhotoTotal(0)
     document.documentElement.classList.remove('dark')
     setState(initialAppState)
     setFreshSetup(false)
@@ -231,6 +282,25 @@ function App() {
     const active = state.skincareActive
     if (!active) return null
     if (tab === 'yoga') return { content: <FaceYogaTab active={active} onStart={() => go('skincare/yoga')} /> }
+    if (tab === 'progress') {
+      const left = daysUntilScan(active)
+      const scanDay = addDays(latestScan(active).date, SCAN_CYCLE_DAYS - 1)
+      return {
+        content: (
+          <ProgressTab
+            state={state}
+            scanReminderSet={state.ui.reminders.some((r) => r.id === `scan:${scanDay}`)}
+            onRemindScan={remindForScan}
+            onToggleKeepPhotos={(keep) => updateActive((a) => ({ ...a, keepScanPhotos: keep }))}
+          />
+        ),
+        footer: (
+          <PrimaryButton disabled={left > 0} onClick={() => go('skincare/rescan')}>
+            {left > 0 ? `Scan unlocks in ${left} ${left === 1 ? 'day' : 'days'}` : 'Take your 14-day scan'}
+          </PrimaryButton>
+        ),
+      }
+    }
     return null
   }
 
@@ -282,7 +352,7 @@ function App() {
             state={state}
             tab={state.ui.skincareTab}
             toast={moduleToast}
-            hasScanPhotos={false}
+            hasScanPhotos={photoTotal > 0}
             onToastDone={() => setModuleToast(null)}
             onTabChange={(tab) => updateUi({ skincareTab: tab })}
             onBack={() => go('dashboard', -1)}
@@ -291,7 +361,7 @@ function App() {
             onRemoveReminder={(id) => setReminders((list) => list.filter((r) => r.id !== id))}
             onEditRoutine={editRoutine}
             onResetModule={resetModule}
-            onDeletePhotos={() => undefined}
+            onDeletePhotos={deletePhotos}
             renderTab={renderTab}
           />
         ) : null
@@ -302,6 +372,17 @@ function App() {
             weekCount={thisWeek(state.skincareActive.yoga.sessions).count}
             onComplete={() => updateActive((a) => ({ ...a, yoga: { sessions: [...a.yoga.sessions, new Date().toISOString()] } }))}
             onExit={() => go('skincare', -1)}
+          />
+        ) : null
+      case 'skincare/rescan':
+        return state.skincareActive ? (
+          <ScanStep
+            {...stepProps}
+            rescan={{
+              keepPhoto: state.skincareActive.keepScanPhotos,
+              onDone: saveRescan,
+              onCancel: () => go('skincare', -1),
+            }}
           />
         ) : null
       case 'skincare/routine':
