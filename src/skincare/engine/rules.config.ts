@@ -20,6 +20,17 @@ export const rules = {
     priority: ['safety', 'barrier', 'comfort', 'info'] as TipPriority[],
   },
 
+  // Product checks (Ask AI). See analyzeProduct.ts.
+  product: {
+    // "High on the list" = within the first N ingredients (INCI lists run highest concentration first).
+    highInListTop: 5,
+    // Two or more warnings with no goal benefit → "Not for you right now".
+    notNowWarnings: 2,
+    // Strong actives: twice a week when they'd clash or the air is dry, else three times.
+    gentleDays: [2, 6],
+    regularDays: [1, 3, 5],
+  },
+
   // Glow score: baseline + what the logs say, capped per source. See glowScore.ts.
   glow: {
     baseline: 64,

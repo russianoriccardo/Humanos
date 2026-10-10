@@ -9,6 +9,7 @@ import { SkincareModule, type ModuleTabRender } from './screens/SkincareModule'
 import { YogaPlayer } from './screens/YogaPlayer'
 import { FaceYogaTab } from './skincare/tabs/FaceYogaTab'
 import { ProgressTab } from './skincare/tabs/ProgressTab'
+import { AskTab } from './skincare/tabs/AskTab'
 import { PrimaryButton } from './components/PrimaryButton'
 import { thisWeek, yogaStreak } from './skincare/yoga/stats'
 import { daysUntilScan, latestScan } from './skincare/active'
@@ -301,6 +302,7 @@ function App() {
         ),
       }
     }
+    if (tab === 'ask') return { content: <AskTab state={state} onActiveChange={updateActive} onToast={setModuleToast} /> }
     return null
   }
 

@@ -7,4 +7,10 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: process.env.VITE_BASE || '/',
   plugins: [react()],
+  server: {
+    watch: {
+      // Large static runtime/model files never change while dev runs; watching them can EBUSY on Windows.
+      ignored: ['**/public/mediapipe/**', '**/public/models/**'],
+    },
+  },
 })
