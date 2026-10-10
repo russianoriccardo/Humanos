@@ -39,9 +39,15 @@ export function BarcodeScanner({ onCode, onCancel, onUsePhoto }: BarcodeScannerP
           BarcodeFormat.UPC_E,
           BarcodeFormat.CODE_128,
         ])
+        // Slower per frame, but finds bars in blurry, small or slightly tilted frames.
+        hints.set(DecodeHintType.TRY_HARDER, true)
         const reader = new BrowserMultiFormatReader(hints, { delayBetweenScanAttempts: 150 })
         const started = await reader.decodeFromConstraints(
-          { video: { facingMode: { ideal: 'environment' } }, audio: false },
+          {
+            // Without a size, many phones give 640×480 — too few pixels per bar for a product barcode.
+            video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+            audio: false,
+          },
           videoRef.current ?? undefined,
           (result, _error, scanner) => {
             if (!result) return
@@ -58,6 +64,12 @@ export function BarcodeScanner({ onCode, onCancel, onUsePhoto }: BarcodeScannerP
         else {
           controls = started
           setStatus('scanning')
+          // Continuous autofocus where the browser exposes it (Android Chrome); iPhone focuses on its own.
+          const track = (videoRef.current?.srcObject as MediaStream | null)?.getVideoTracks()[0]
+          const caps = track?.getCapabilities?.() as { focusMode?: string[] } | undefined
+          if (track && caps?.focusMode?.includes('continuous')) {
+            track.applyConstraints({ advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet] }).catch(() => undefined)
+          }
         }
       } catch (error) {
         if (cancelled) return
@@ -94,7 +106,7 @@ export function BarcodeScanner({ onCode, onCancel, onUsePhoto }: BarcodeScannerP
           <>
             <div className="pointer-events-none absolute inset-x-8 top-1/2 h-32 -translate-y-1/2 rounded-[16px] border-2 border-accent" aria-hidden />
             <p aria-live="polite" className="absolute inset-x-0 bottom-6 text-center text-sm font-medium">
-              {status === 'starting' ? 'Starting camera…' : 'Hold the barcode inside the frame'}
+              {status === 'starting' ? 'Starting camera…' : 'Fit the barcode in the frame, about 20 cm away'}
             </p>
           </>
         )}
