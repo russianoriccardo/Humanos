@@ -11,7 +11,9 @@ import type { AppState, SleepActive, SleepCheckIn, SleepTab } from '../state/app
 import { nightKeyFor } from '../sleep/plan'
 import type { SleepTip } from '../sleep/rules'
 import { MorningsTab } from '../sleep/tabs/MorningsTab'
+import { PatternsTab } from '../sleep/tabs/PatternsTab'
 import { TonightTab } from '../sleep/tabs/TonightTab'
+import { WindDownTab } from '../sleep/tabs/WindDownTab'
 
 const TABS: { id: SleepTab; label: string }[] = [
   { id: 'tonight', label: 'Tonight' },
@@ -35,6 +37,8 @@ type SleepModuleProps = {
   onRemoveReminder: (id: string) => void
   onEditTimes: () => void
   onResetModule: () => void
+  onStartSession: (sessionId: string) => void
+  onOpenSkincare: () => void
 }
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
@@ -56,6 +60,8 @@ export function SleepModule({
   onRemoveReminder,
   onEditTimes,
   onResetModule,
+  onStartSession,
+  onOpenSkincare,
 }: SleepModuleProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [sheet, setSheet] = useState<SheetKind>(null)
@@ -96,11 +102,16 @@ export function SleepModule({
       />
     ) : tab === 'mornings' ? (
       <MorningsTab active={active} today={today} onSave={onSaveMorning} />
+    ) : tab === 'winddown' ? (
+      <WindDownTab state={state} active={active} night={night} onStart={onStartSession} onComingSoon={() => setSheet('coming-soon')} />
     ) : (
-      <div className="flex flex-col items-center gap-2 py-16 text-center">
-        <p className="text-base font-semibold text-text">Coming next</p>
-        <p className="text-sm text-muted">This tab is on its way.</p>
-      </div>
+      <PatternsTab
+        active={active}
+        today={today}
+        night={night}
+        skincareLive={state.modulesSetUp.includes('skincare') && !!state.skincareActive}
+        onOpenSkincare={onOpenSkincare}
+      />
     )
 
   function menuItem(label: string, Icon: typeof Moon, onClick: () => void) {

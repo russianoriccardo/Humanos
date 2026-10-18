@@ -28,6 +28,8 @@ import { MirrorStep } from './sleep/setup/MirrorStep'
 import { createSleepActive, defaultSleepTab, nextAt, nightKeyFor, retime, sleepReminders, tonightLightsOut } from './sleep/plan'
 import type { SleepTip } from './sleep/rules'
 import { SleepModule } from './screens/SleepModule'
+import { SleepSessionPlayer } from './screens/SleepSessionPlayer'
+import { sessionById } from './sleep/sessions'
 import { createSkincareActive, SCAN_CYCLE_DAYS } from './skincare/active'
 import type { Tip } from './skincare/engine/types'
 import { WeatherProvider } from './state/weather'
@@ -106,6 +108,7 @@ function App() {
   const [editingRoutine, setEditingRoutine] = useState(false)
   // "Edit sleep times" reruns the bedtime step and comes back to Sleep.
   const [editingSleepTimes, setEditingSleepTimes] = useState(false)
+  const [sleepSessionId, setSleepSessionId] = useState<string | null>(null)
   const [moduleToast, setModuleToast] = useState<string | null>(null)
   const [alert, setAlert] = useState<Alert | null>(null)
   const [resetCount, setResetCount] = useState(0)
@@ -619,11 +622,27 @@ function App() {
             onRemoveReminder={(id) => setReminders((list) => list.filter((r) => r.id !== id))}
             onEditTimes={editSleepTimes}
             onResetModule={resetSleepModule}
+            onStartSession={(id) => {
+              setSleepSessionId(id)
+              go('sleep/session')
+            }}
+            onOpenSkincare={() => go('skincare')}
           />
         ) : null
-      // The session player is built next; until then it's a placeholder.
-      case 'sleep/session':
-        return <ComingNext moduleId="sleep" onBack={() => go('sleep', -1)} />
+      case 'sleep/session': {
+        const session = sleepSessionId ? sessionById(sleepSessionId) : undefined
+        return session ? (
+          <SleepSessionPlayer
+            session={session}
+            onComplete={() => {
+              updateSleepActive((a) => ({ ...a, sessions: [...a.sessions, { id: session.id, at: new Date().toISOString() }] }))
+              setModuleToast('Session saved')
+              go('sleep', -1)
+            }}
+            onExit={() => go('sleep', -1)}
+          />
+        ) : null
+      }
     }
   })()
 
