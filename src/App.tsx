@@ -30,6 +30,7 @@ import type { SleepTip } from './sleep/rules'
 import { SleepModule } from './screens/SleepModule'
 import { SleepSessionPlayer } from './screens/SleepSessionPlayer'
 import { sessionById } from './sleep/sessions'
+import { simulateSleep } from './sleep/demo'
 import { createSkincareActive, SCAN_CYCLE_DAYS } from './skincare/active'
 import type { Tip } from './skincare/engine/types'
 import { WeatherProvider } from './state/weather'
@@ -399,6 +400,22 @@ function App() {
     else setReminders((list) => list.filter((r) => !r.id.startsWith('sleep:winddown:')))
   }
 
+  // Demo panel: 18 nights of check ins and sessions, with tonight's training tip showing.
+  function simulateSleepNights() {
+    setState((current) => {
+      if (!current.sleepActive) return current
+      return {
+        ...current,
+        sleepActive: simulateSleep(current.sleepActive),
+        demo: { ...current.demo, scenario: 'shortSleepTrained' },
+        // Dropped so the rolling reminders come back at the simulated plan's times.
+        ui: { ...current.ui, reminders: current.ui.reminders.filter((r) => !/^sleep:(winddown|checkin):/.test(r.id)) },
+      }
+    })
+    setFreshModuleId(null)
+    setToastPending(false)
+  }
+
   function resetSleepModule() {
     setState((current) => ({
       ...current,
@@ -455,6 +472,8 @@ function App() {
     setFreshModuleId(null)
     setToastPending(false)
     setEditingRoutine(false)
+    setEditingSleepTimes(false)
+    setSleepSessionId(null)
     setResetCount((count) => count + 1)
     go('onboarding', -1)
   }
@@ -518,6 +537,7 @@ function App() {
             onDemoChange={updateDemo}
             onJumpCycle={jumpScanCycle}
             onSimulate={simulateNineDays}
+            onSimulateSleep={simulateSleepNights}
             onStartModule={(moduleId) =>
               !SETUP_READY.includes(moduleId)
                 ? go('module/home', 1, moduleId)

@@ -9,9 +9,11 @@ import type { HealthScenario } from '../skincare/engine/types'
 type DemoPanelProps = {
   demo: DemoState
   canJumpCycle: boolean
+  canSimulateSleep: boolean
   onChange: (patch: Partial<DemoState>) => void
   onJumpCycle: () => void
   onSimulate: () => void
+  onSimulateSleep: () => void
   onReset: () => void
   onClose: () => void
 }
@@ -31,10 +33,21 @@ function Label({ children }: { children: string }) {
   return <p className="text-[11px] font-semibold tracking-[1.5px] text-muted uppercase">{children}</p>
 }
 
-export function DemoPanel({ demo, canJumpCycle, onChange, onJumpCycle, onSimulate, onReset, onClose }: DemoPanelProps) {
+export function DemoPanel({
+  demo,
+  canJumpCycle,
+  canSimulateSleep,
+  onChange,
+  onJumpCycle,
+  onSimulate,
+  onSimulateSleep,
+  onReset,
+  onClose,
+}: DemoPanelProps) {
   const [confirmReset, setConfirmReset] = useState(false)
   const [jumped, setJumped] = useState(false)
   const [simulated, setSimulated] = useState(false)
+  const [sleepSimulated, setSleepSimulated] = useState(false)
   const timeInput =
     'h-11 w-full rounded-[14px] border border-border bg-surface px-3 text-base text-text focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none'
 
@@ -140,6 +153,22 @@ export function DemoPanel({ demo, canJumpCycle, onChange, onJumpCycle, onSimulat
               {simulated ? 'Simulated 9 days ✓' : 'Simulate 9 days of use'}
             </button>
             {!canJumpCycle && <p className="text-sm text-muted">Set up Skincare first.</p>}
+          </section>
+
+          <section className="flex flex-col gap-2">
+            <Label>Sleep</Label>
+            <button
+              type="button"
+              disabled={!canSimulateSleep}
+              onClick={() => {
+                onSimulateSleep()
+                setSleepSimulated(true)
+              }}
+              className={`h-11 rounded-full border border-border bg-surface px-4 text-sm font-medium text-text disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`}
+            >
+              {sleepSimulated ? 'Simulated 18 nights ✓' : 'Simulate 18 nights of sleep'}
+            </button>
+            {!canSimulateSleep && <p className="text-sm text-muted">Set up Sleep first.</p>}
           </section>
 
           <section className="flex flex-col gap-2">

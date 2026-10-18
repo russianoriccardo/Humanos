@@ -40,6 +40,7 @@ type DashboardProps = {
   onDemoChange: (patch: Partial<DemoState>) => void
   onJumpCycle: () => void
   onSimulate: () => void
+  onSimulateSleep: () => void
   onStartModule: (moduleId: string) => void
   onOpenModule: (moduleId: string, sleepTab?: SleepTab) => void
   onReset: () => void
@@ -128,6 +129,7 @@ export function Dashboard({
   onDemoChange,
   onJumpCycle,
   onSimulate,
+  onSimulateSleep,
   onStartModule,
   onOpenModule,
   onReset,
@@ -307,9 +309,11 @@ export function Dashboard({
         <DemoPanel
           demo={state.demo}
           canJumpCycle={!!active}
+          canSimulateSleep={!!sleepActive}
           onChange={onDemoChange}
           onJumpCycle={onJumpCycle}
           onSimulate={onSimulate}
+          onSimulateSleep={onSimulateSleep}
           onReset={onReset}
           onClose={() => setDemoOpen(false)}
         />
