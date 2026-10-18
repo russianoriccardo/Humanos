@@ -5,6 +5,7 @@ import { StepTransition } from './components/StepTransition'
 import { Toast } from './components/Toast'
 import { Dashboard } from './screens/Dashboard'
 import { ComingNext } from './screens/ComingNext'
+import { SETUP_READY } from './lib/modules'
 import { SkincareModule, type ModuleTabRender } from './screens/SkincareModule'
 import { YogaPlayer } from './screens/YogaPlayer'
 import { FaceYogaTab } from './skincare/tabs/FaceYogaTab'
@@ -60,6 +61,13 @@ type RouteName =
   | 'skincare/scan'
   | 'skincare/result'
   | 'module/home'
+  | 'sleep'
+  | 'sleep/anchor'
+  | 'sleep/intent'
+  | 'sleep/constraint'
+  | 'sleep/health'
+  | 'sleep/mirror'
+  | 'sleep/session'
 
 type Route = { name: RouteName; moduleId?: string }
 
@@ -379,9 +387,15 @@ function App() {
             onJumpCycle={jumpScanCycle}
             onSimulate={simulateNineDays}
             onStartModule={(moduleId) =>
-              moduleId === 'skincare' ? go('skincare/routine') : go('module/home', 1, moduleId)
+              !SETUP_READY.includes(moduleId)
+                ? go('module/home', 1, moduleId)
+                : moduleId === 'skincare'
+                  ? go('skincare/routine')
+                  : go('sleep/anchor')
             }
-            onOpenModule={(moduleId) => (moduleId === 'skincare' ? go('skincare') : go('module/home', 1, moduleId))}
+            onOpenModule={(moduleId) =>
+              moduleId === 'skincare' ? go('skincare') : moduleId === 'sleep' ? go('sleep') : go('module/home', 1, moduleId)
+            }
             onReset={resetDemo}
           />
         )
@@ -436,6 +450,15 @@ function App() {
         return <ResultScreen setup={state.skincare} onBack={() => skincareStep(-1)} onDone={completeSkincare} />
       case 'module/home':
         return <ComingNext moduleId={route.moduleId ?? 'skincare'} onBack={() => go('dashboard', -1)} />
+      // Sleep screens are built next; until then each one is a placeholder.
+      case 'sleep':
+      case 'sleep/anchor':
+      case 'sleep/intent':
+      case 'sleep/constraint':
+      case 'sleep/health':
+      case 'sleep/mirror':
+      case 'sleep/session':
+        return <ComingNext moduleId="sleep" onBack={() => go('dashboard', -1)} />
     }
   })()
 

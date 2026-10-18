@@ -41,6 +41,31 @@ export type SkincareActive = {
   seenCoachMark: boolean
 }
 
+export type SleepAnchor = 'well' | 'fine' | 'badly'
+export type SleepIntent = 'energy' | 'fallAsleep' | 'fewerWakeups' | 'mornings'
+export type SleepSetup = {
+  anchor: SleepAnchor | null
+  intents: SleepIntent[]          // max 2
+  bedtime: string | null          // 'HH:MM', 24h
+  wake: string | null
+  health: 'notNow' | 'connected' | 'denied' | 'noData' | null
+  completedAt?: string
+}
+export type SleepCheckIn = {
+  lightsOut: string; wake: string; rested: 1 | 2 | 3 | 4 | 5; tags: string[]; source: 'checkin' | 'health'
+}
+export type SleepActive = {
+  startedAt: string               // date of night 1 (setup day)
+  planStart: string               // lights out at setup, 'HH:MM'
+  goal: string                    // target lights out, 'HH:MM'
+  wake: string
+  checkIns: Record<string, SleepCheckIn>   // key = date of the MORNING
+  windDown: Record<string, string[]>       // key = date of the night, ticked step ids
+  sessions: { id: string; at: string }[]
+  reminderOn: boolean
+  seenCoachMark: boolean
+}
+
 export type Reminder = { id: string; at: string; title: string; body: string }
 
 export type UiState = {
@@ -61,6 +86,8 @@ export type AppState = {
   modulesSetUp: string[]
   skincare: SkincareSetup
   skincareActive: SkincareActive | null
+  sleep: SleepSetup
+  sleepActive: SleepActive | null
   // Daily UV peak / humidity low, recorded whenever weather loads. Feeds "SPF on sunny days".
   weatherLog: Record<string, { uvMax: number; rhMin: number }>
   demo: DemoState
@@ -92,12 +119,22 @@ const initialUi: UiState = {
   reminders: [],
 }
 
+export const initialSleep: SleepSetup = {
+  anchor: null,
+  intents: [],
+  bedtime: null,
+  wake: null,
+  health: null,
+}
+
 export const initialAppState: AppState = {
   onboarding: initialAnswers,
   onboardingDone: false,
   modulesSetUp: [],
   skincare: initialSkincare,
   skincareActive: null,
+  sleep: initialSleep,
+  sleepActive: null,
   weatherLog: {},
   demo: initialDemo,
   ui: initialUi,
@@ -105,8 +142,9 @@ export const initialAppState: AppState = {
 
 type LegacyUi = { coachMarkSeen?: boolean; tonight?: { date: string; done: string[] } }
 
-// `createActive` is injected to keep this module free of the reading/routine logic.
 const REMINDER_MODULES = ['skincare', 'sleep']
+
+// `createActive` is injected to keep this module free of the reading/routine logic.
 
 export function loadAppState(createActive: (setup: SkincareSetup) => SkincareActive): AppState {
   try {
@@ -119,6 +157,8 @@ export function loadAppState(createActive: (setup: SkincareSetup) => SkincareAct
         onboarding: { ...initialAnswers, ...parsed.onboarding },
         skincare: { ...initialSkincare, ...parsed.skincare },
         skincareActive: parsed.skincareActive ?? null,
+        sleep: { ...initialSleep, ...parsed.sleep },
+        sleepActive: parsed.sleepActive ?? null,
         weatherLog: parsed.weatherLog ?? {},
         demo: { ...initialDemo, ...parsed.demo },
         ui: {

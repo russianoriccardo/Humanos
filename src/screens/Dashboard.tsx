@@ -71,7 +71,7 @@ export function Dashboard({
   const fresh = variant === 'just-set-up' ? freshModuleId : null
   const isLive = (id: string) => (id === 'skincare' ? skincareLive : live && state.modulesSetUp.includes(id))
   const name = state.onboarding.name.trim()
-  const modules = orderedModules(state.onboarding.modules)
+  const modules = orderedModules(state.onboarding.modules, state.modulesSetUp)
   const total = modules.length
   const nextModule = modules.find((id) => !state.modulesSetUp.includes(id))
   const today = todayKey()

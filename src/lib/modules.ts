@@ -75,9 +75,13 @@ export function moduleName(id: string) {
   return MODULES.find((m) => m.id === id)?.name ?? id
 }
 
-// Dashboard order: Skincare first when picked (it's the only module with a setup flow today).
+// Modules with a real setup flow. Starting any other module opens ComingNext.
+export const SETUP_READY = ['skincare', 'sleep']
+
+// Dashboard order: live modules first, in the order they were set up, then the rest in onboarding order.
 // Falls back to Skincare alone if onboarding's module step was skipped.
-export function orderedModules(picked: string[]): string[] {
+export function orderedModules(picked: string[], setUp: string[] = []): string[] {
   const list = picked.length > 0 ? picked : ['skincare']
-  return list.includes('skincare') ? ['skincare', ...list.filter((id) => id !== 'skincare')] : list
+  const live = setUp.filter((id) => list.includes(id))
+  return [...live, ...list.filter((id) => !live.includes(id))]
 }
