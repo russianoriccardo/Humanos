@@ -20,6 +20,12 @@ import { InventoryStep } from './skincare/InventoryStep'
 import { GoalStep } from './skincare/GoalStep'
 import { ScanStep } from './skincare/scan/ScanStep'
 import { ResultScreen } from './skincare/ResultScreen'
+import { AnchorStep } from './sleep/setup/AnchorStep'
+import { IntentStep } from './sleep/setup/IntentStep'
+import { ConstraintStep } from './sleep/setup/ConstraintStep'
+import { HealthStep } from './sleep/setup/HealthStep'
+import { MirrorStep } from './sleep/setup/MirrorStep'
+import { createSleepActive } from './sleep/plan'
 import { createSkincareActive, SCAN_CYCLE_DAYS } from './skincare/active'
 import type { Tip } from './skincare/engine/types'
 import { WeatherProvider } from './state/weather'
@@ -46,6 +52,7 @@ import {
   type SkinReading,
   type SkincareActive,
   type SkincareSetup,
+  type SleepSetup,
   type UiState,
 } from './state/appState'
 
@@ -78,6 +85,8 @@ const SKINCARE_FLOW: RouteName[] = [
   'skincare/scan',
   'skincare/result',
 ]
+
+const SLEEP_FLOW: RouteName[] = ['sleep/anchor', 'sleep/intent', 'sleep/constraint', 'sleep/health', 'sleep/mirror']
 
 type Alert = { message: string; detail?: string; icon?: 'check' | 'bell' }
 
@@ -129,6 +138,9 @@ function App() {
 
   const updateSkincare = (patch: Partial<SkincareSetup>) =>
     setState((current) => ({ ...current, skincare: { ...current.skincare, ...patch } }))
+
+  const updateSleep = (patch: Partial<SleepSetup>) =>
+    setState((current) => ({ ...current, sleep: { ...current.sleep, ...patch } }))
 
   const updateUi = (patch: Partial<UiState>) => setState((current) => ({ ...current, ui: { ...current.ui, ...patch } }))
 
@@ -296,6 +308,28 @@ function App() {
     setToastPending(true)
   }
 
+  function sleepStep(offset: 1 | -1) {
+    const target = SLEEP_FLOW[SLEEP_FLOW.indexOf(route.name) + offset]
+    go(target ?? 'dashboard', offset)
+  }
+
+  function completeSleep(reminders: Reminder[]) {
+    setState((current) => {
+      const sleep = { ...current.sleep, completedAt: current.sleep.completedAt ?? new Date().toISOString() }
+      const ids = new Set(reminders.map((r) => r.id))
+      return {
+        ...current,
+        modulesSetUp: [...current.modulesSetUp.filter((id) => id !== 'sleep'), 'sleep'],
+        sleep,
+        sleepActive: createSleepActive(sleep, reminders.length > 0),
+        ui: { ...current.ui, reminders: [...current.ui.reminders.filter((r) => !ids.has(r.id)), ...reminders] },
+      }
+    })
+    go('dashboard')
+    setFreshModuleId('sleep')
+    setToastPending(true)
+  }
+
   function editRoutine() {
     setEditingRoutine(true)
     go('skincare/routine')
@@ -450,13 +484,26 @@ function App() {
         return <ResultScreen setup={state.skincare} onBack={() => skincareStep(-1)} onDone={completeSkincare} />
       case 'module/home':
         return <ComingNext moduleId={route.moduleId ?? 'skincare'} onBack={() => go('dashboard', -1)} />
-      // Sleep screens are built next; until then each one is a placeholder.
-      case 'sleep':
       case 'sleep/anchor':
+        return <AnchorStep setup={state.sleep} onChange={updateSleep} onNext={() => sleepStep(1)} onBack={() => sleepStep(-1)} />
       case 'sleep/intent':
+        return <IntentStep setup={state.sleep} onChange={updateSleep} onNext={() => sleepStep(1)} onBack={() => sleepStep(-1)} />
       case 'sleep/constraint':
+        return <ConstraintStep setup={state.sleep} onChange={updateSleep} onNext={() => sleepStep(1)} onBack={() => sleepStep(-1)} />
       case 'sleep/health':
+        return (
+          <HealthStep
+            setup={state.sleep}
+            outcome={state.demo.healthConnect}
+            onChange={updateSleep}
+            onNext={() => sleepStep(1)}
+            onBack={() => sleepStep(-1)}
+          />
+        )
       case 'sleep/mirror':
+        return <MirrorStep setup={state.sleep} onBack={() => sleepStep(-1)} onDone={completeSleep} />
+      // The Sleep module itself is built next; until then it's a placeholder.
+      case 'sleep':
       case 'sleep/session':
         return <ComingNext moduleId="sleep" onBack={() => go('dashboard', -1)} />
     }

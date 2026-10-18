@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { SelectableRow } from './SelectableRow'
+import { Chip } from './Chip'
 import { SCENARIO_LABELS } from '../services/health.mock'
-import type { DemoState } from '../state/appState'
+import type { DemoState, HealthConnectDemo } from '../state/appState'
 import type { HealthScenario } from '../skincare/engine/types'
 
 type DemoPanelProps = {
@@ -16,6 +17,13 @@ type DemoPanelProps = {
 }
 
 const SCENARIOS = Object.keys(SCENARIO_LABELS) as HealthScenario[]
+
+const HEALTH_CONNECT: { id: HealthConnectDemo; label: string }[] = [
+  { id: 'unavailable', label: 'Not available' },
+  { id: 'connected', label: 'Connected' },
+  { id: 'denied', label: 'Denied' },
+  { id: 'noData', label: 'No data' },
+]
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
@@ -66,6 +74,21 @@ export function DemoPanel({ demo, canJumpCycle, onChange, onJumpCycle, onSimulat
                 onClick={() => onChange({ scenario: id })}
               />
             ))}
+          </section>
+
+          <section className="flex flex-col gap-2">
+            <Label>Health connect</Label>
+            <div className="flex flex-wrap gap-2">
+              {HEALTH_CONNECT.map((option) => (
+                <Chip
+                  key={option.id}
+                  variant="soft"
+                  label={option.label}
+                  selected={demo.healthConnect === option.id}
+                  onClick={() => onChange({ healthConnect: option.id })}
+                />
+              ))}
+            </div>
           </section>
 
           <section className="flex flex-col gap-2">

@@ -75,8 +75,12 @@ export type UiState = {
   reminders: Reminder[]
 }
 
+// What "Connect Apple Health" plays out in Sleep setup. A web app can't read Apple Health.
+export type HealthConnectDemo = 'unavailable' | 'connected' | 'denied' | 'noData'
+
 export type DemoState = {
   scenario: HealthScenario
+  healthConnect: HealthConnectDemo
   outdoorWindow: { start: string; end: string }
 }
 
@@ -109,6 +113,7 @@ export const initialSkincare: SkincareSetup = {
 
 export const initialDemo: DemoState = {
   scenario: 'none',
+  healthConnect: 'unavailable',
   outdoorWindow: { start: '12:30', end: '13:30' },
 }
 
