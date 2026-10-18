@@ -180,11 +180,11 @@ export function SkincareModule({
           )}
           {permission === 'granted' && <p className="text-sm text-muted">Notifications are on for this device.</p>}
           {permission === 'denied' && (
-            <p className="text-sm text-muted">Notifications are blocked in your browser settings — reminders show inside the app.</p>
+            <p className="text-sm text-muted">Notifications are blocked in your browser settings, so reminders show inside the app.</p>
           )}
           {permission === 'unsupported' && (
             <p className="text-sm text-muted">
-              This browser can't show notifications here — reminders show inside the app. On iPhone, add HUMANOS to your Home
+              This browser can't show notifications here, so reminders show inside the app. On iPhone, add HUMANOS to your Home
               Screen first.
             </p>
           )}

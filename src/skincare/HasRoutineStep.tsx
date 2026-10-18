@@ -17,7 +17,7 @@ export function HasRoutineStep({ setup, onChange, onNext, onBack, onSkip }: Skin
       }
     >
       <div className="flex flex-col gap-6">
-        <StepTitle title="Do you already have a skincare routine?" subtitle="No wrong answer — we build from where you are." />
+        <StepTitle title="Do you already have a skincare routine?" subtitle="No wrong answer. We build from where you are." />
         <div className="flex flex-col gap-3">
           <SelectableRow
             tone="tinted"

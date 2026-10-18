@@ -28,7 +28,7 @@ export const REJECT_MESSAGE: Record<CheckId, string> = {
   tooDark: 'Too dark',
   tooBright: 'Too bright',
   pose: 'Face the camera straight on',
-  blurry: 'A bit blurry — hold still',
+  blurry: 'A bit blurry · hold still',
 }
 
 const LIVE_HINT: Record<CheckId, string> = {
@@ -37,12 +37,12 @@ const LIVE_HINT: Record<CheckId, string> = {
   offCenter: 'Center your face in the oval',
   tooSmall: 'Move a little closer',
   tooDark: 'Find more light',
-  tooBright: 'Too bright — step out of direct light',
+  tooBright: 'Too bright. Step out of direct light',
   pose: 'Face the camera straight on',
   blurry: 'Hold still…',
 }
 
-export const READY_HINT = 'Perfect — take the photo'
+export const READY_HINT = 'Perfect. Take the photo'
 
 export function faceBox(landmarks: Point[]): FaceBox {
   let minX = 1, minY = 1, maxX = 0, maxY = 0

@@ -67,8 +67,8 @@ export function ResultScreen({ setup, onBack, onDone }: ResultScreenProps) {
 
         <HintCard eyebrow="Smart suggestions">
           {isA
-            ? `As HUMANOS learns your skin, you'll get product picks matched to it — starting with ${spfGap ? 'that SPF gap' : 'the gap above'}.`
-            : 'You own nothing yet — so these picks are the first three to buy, matched to your skin.'}
+            ? `As HUMANOS learns your skin, you'll get product picks matched to it, starting with ${spfGap ? 'that SPF gap' : 'the gap above'}.`
+            : 'You own nothing yet, so these picks are the first three to buy, matched to your skin.'}
         </HintCard>
       </div>
     </Screen>

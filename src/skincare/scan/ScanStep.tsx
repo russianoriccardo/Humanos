@@ -20,7 +20,7 @@ type PlacedPill = { label: string; left: number; top: number }
 
 const PANEL_ASPECT = 4 / 5
 const CHECKLIST = ['Face detected', 'Skin tone mapped', 'Texture & hydration']
-const TIPS = ['Face a window — daylight beats a lamp', 'Fill the oval with your whole face', 'Take off glasses, hats and heavy makeup']
+const TIPS = ['Face a window. Daylight beats a lamp', 'Fill the oval with your whole face', 'Take off glasses, hats and heavy makeup']
 const INITIAL_LIVE: QualityResult = { passed: false, failures: ['noFace'], hint: 'Center your face in the oval' }
 
 // Which checklist item a failure belongs to: face problems stop at item 0, light at 1, blur at 2.
@@ -270,7 +270,7 @@ export function ScanStep({ setup, onChange, onNext, onBack, rescan }: ScanStepPr
       : { title: 'Let the AI see your skin', subtitle: 'One photo in natural light is enough.' },
     processing: { title: 'Reading your photo', subtitle: 'This happens on your device.' },
     complete: { title: 'Scan complete', subtitle: "Here's what we picked up." },
-    rejected: { title: "We couldn't read that one", subtitle: "Nothing wrong with you — the photo just isn't usable." },
+    rejected: { title: "We couldn't read that one", subtitle: "Nothing wrong with you. The photo just isn't usable." },
   }[phase]
 
   const footer = (() => {
@@ -356,7 +356,7 @@ export function ScanStep({ setup, onChange, onNext, onBack, rescan }: ScanStepPr
               </p>
               <p className="text-sm text-on-panel">
                 {detector === 'failed' && camera === 'live'
-                  ? 'Check your connection and try again — or carry on without a scan.'
+                  ? 'Check your connection and try again, or carry on without a scan.'
                   : 'Allow the camera in your browser settings, or carry on without a scan.'}
               </p>
             </div>

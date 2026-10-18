@@ -59,30 +59,30 @@ function notesFor(type: string, setup: SkincareSetup, stats: FrameStats | null) 
 }
 
 function strengthFor(setup: SkincareSetup) {
-  if (branchOf(setup.hasRoutine) === 'B') return 'A clear goal and a clean slate — nothing to undo, nothing conflicting.'
+  if (branchOf(setup.hasRoutine) === 'B') return 'A clear goal and a clean slate. Nothing to undo, nothing conflicting.'
   const products = setup.products
   if (setup.noProducts || products.length === 0) {
-    return 'Starting from zero means nothing to undo — every step we add will count.'
+    return 'Starting from zero means nothing to undo. Every step we add will count.'
   }
   const treats = ['Serum', 'Retinol', 'Toner', 'Exfoliant'].some((p) => has(products, p))
   if (products.length >= 3 && has(products, 'Cleanser') && has(products, 'Moisturizer') && treats) {
-    return 'Three products is a real starting point — you already cleanse, treat and moisturise.'
+    return 'Three products is a real starting point. You already cleanse, treat and moisturise.'
   }
   if (products.length >= 3) {
-    return `${products.length} products is a real starting point — the routine exists, we'll tune the order.`
+    return `${products.length} products is a real starting point. The routine exists, we'll tune the order.`
   }
-  return `You already have a habit (${products.join(' and ').toLowerCase()}) — and the habit is the hard part.`
+  return `You already have a habit (${products.join(' and ').toLowerCase()}), and the habit is the hard part.`
 }
 
 function gapFor(setup: SkincareSetup) {
   const list = branchOf(setup.hasRoutine) === 'A' ? setup.products : buildRoutine(setup).map((step) => step.name)
   if (!has(list, 'SPF')) return 'No SPF. That is the single biggest lever on how your skin ages.'
-  if (!has(list, 'Moisturizer')) return 'No moisturiser yet — your skin barrier is doing all the work alone.'
-  if (!has(list, 'Cleanser')) return 'No cleanser — the evening wash is what lets everything else work.'
+  if (!has(list, 'Moisturizer')) return 'No moisturiser yet. Your skin barrier is doing all the work alone.'
+  if (!has(list, 'Cleanser')) return 'No cleanser yet. The evening wash is what lets everything else work.'
   if (setup.goal === 'acne' && !has(list, 'Retinol') && !has(list, 'Exfoliant')) {
-    return 'Nothing targets breakouts yet — one active, introduced slowly, is the next step.'
+    return 'Nothing targets breakouts yet. One active, introduced slowly, is the next step.'
   }
-  return 'Consistency. The routine is right — doing it nightly is what moves the score.'
+  return 'Consistency. The routine is right. Doing it nightly is what moves the score.'
 }
 
 export function buildReading(setup: SkincareSetup, stats: FrameStats | null): SkinReading {

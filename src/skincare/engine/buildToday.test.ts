@@ -77,15 +77,15 @@ describe('barrier night', () => {
   it('skips retinol after short sleep + training', () => {
     const c = ctx({ health: getHealth('shortSleepTrained') })
     const tip = buildToday(c).tips.find((t) => t.id === 'barrier-night')
-    expect(tip?.body).toBe('You slept 5h10 and trained yesterday. Skip the retinol tonight — give your barrier a night off.')
+    expect(tip?.body).toBe('You slept 5h10 and trained yesterday. Skip the retinol tonight. Give your barrier a night off.')
     expect(tip?.routineChanged).toBe(true)
-    expect(tonight(c)).toEqual(['Cleanser', 'Serum', 'Retinol [skipped: Skipped — barrier night off]', 'Moisturizer'])
+    expect(tonight(c)).toEqual(['Cleanser', 'Serum', 'Retinol [skipped: Skipped · barrier night off]', 'Moisturizer'])
   })
 
   it('skips the exfoliant when there is no retinol', () => {
     const c = ctx({ health: getHealth('shortSleepTrained'), routine: routine('Cleanser', 'Exfoliant', 'Moisturizer') })
     expect(buildToday(c).tips[0].body).toContain('Skip the exfoliant tonight')
-    expect(tonight(c)[1]).toBe('Exfoliant [skipped: Skipped — barrier night off]')
+    expect(tonight(c)[1]).toBe('Exfoliant [skipped: Skipped · barrier night off]')
   })
 
   it('gives gentle advice without touching a routine that has no actives', () => {
@@ -110,7 +110,7 @@ describe('humidity', () => {
     )
     expect(tonight(c)).toEqual([
       'Cleanser',
-      'Moisturizer [moved: Moved up — dry air]',
+      'Moisturizer [moved: Moved up · dry air]',
       'Serum [moved: After moisturizer tonight]',
       'Retinol',
     ])
@@ -118,8 +118,8 @@ describe('humidity', () => {
 
   it('humid skips the face oil', () => {
     const c = ctx({ weather: weather({ rh: 82 }), routine: routine('Cleanser', 'Moisturizer', 'Face oil') })
-    expect(buildToday(c).tips[0].body).toBe("It's humid (82%). Go lighter tonight — skip the face oil.")
-    expect(tonight(c)).toEqual(['Cleanser', 'Moisturizer', 'Face oil [skipped: Skipped — humid tonight]'])
+    expect(buildToday(c).tips[0].body).toBe("It's humid (82%). Go lighter tonight. Skip the face oil.")
+    expect(tonight(c)).toEqual(['Cleanser', 'Moisturizer', 'Face oil [skipped: Skipped · humid tonight]'])
   })
 
   it('leaves 40–75% alone', () => {
@@ -153,9 +153,9 @@ describe('selection', () => {
     const c = ctx({ weather: weather({ uvPeak: 7, rh: 32 }), health: getHealth('shortSleepTrained') })
     expect(tonight(c)).toEqual([
       'Cleanser',
-      'Moisturizer [moved: Moved up — dry air]',
+      'Moisturizer [moved: Moved up · dry air]',
       'Serum [moved: After moisturizer tonight]',
-      'Retinol [skipped: Skipped — barrier night off]',
+      'Retinol [skipped: Skipped · barrier night off]',
     ])
   })
 

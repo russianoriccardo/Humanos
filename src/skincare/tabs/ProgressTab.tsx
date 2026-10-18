@@ -109,7 +109,7 @@ export function ProgressTab({ state, scanReminderSet, onRemindScan, onToggleKeep
         <p className="text-sm font-semibold text-text">
           {left > 0 ? `Next scan in ${left} ${left === 1 ? 'day' : 'days'} · ${nextDate}` : 'Your 14-day scan is ready'}
         </p>
-        <p className="text-sm text-text">Same window, same light, no makeup — so the comparison is fair.</p>
+        <p className="text-sm text-text">Same window, same light, no makeup, so the comparison is fair.</p>
         {left > 0 &&
           (scanReminderSet ? (
             <span className="inline-flex h-11 items-center gap-2 self-start rounded-full bg-surface px-4 text-sm font-semibold text-text">
@@ -180,7 +180,7 @@ export function ProgressTab({ state, scanReminderSet, onRemindScan, onToggleKeep
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-text">No change since your baseline — skin moves over months, not weeks.</p>
+              <p className="text-sm text-text">No change since your baseline. Skin moves over months, not weeks.</p>
             )}
           </div>
         ) : (

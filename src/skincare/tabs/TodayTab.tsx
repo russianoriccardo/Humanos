@@ -242,7 +242,7 @@ export function TodayTab({ state, onActiveChange, onRemind }: TodayTabProps) {
       <TabIntro
         eyebrow={`${weekdayName(today)} · Day ${routineDay(active, today)} of your routine`}
         title="Today, adjusted for you"
-        subtitle="Built from your weather, sleep and training — not a generic routine."
+        subtitle="Built from your weather, sleep and training, not a generic routine."
       />
 
       {weather.status === 'needs-choice' && (
@@ -283,7 +283,7 @@ export function TodayTab({ state, onActiveChange, onRemind }: TodayTabProps) {
             <TipCard
               key={tip.id}
               tip={tip}
-              reminderSet={reminderIds.has(reminderIdFor(tip, today))}
+              reminderSet={reminderIds.has(reminderIdFor('skincare', tip, today))}
               onRemind={() => onRemind(tip)}
             />
           ))

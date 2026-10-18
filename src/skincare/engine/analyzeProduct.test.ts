@@ -39,7 +39,7 @@ describe('analyzeProduct', () => {
     expect(verdict.level).toBe('care')
     expect(verdict.reasons).toEqual([
       { kind: 'match', text: 'Glycolic acid (AHA) works toward your goal: glow.' },
-      { kind: 'warn', text: 'Clashes with retinol. Never the same night — alternate them.' },
+      { kind: 'warn', text: 'Clashes with retinol. Never the same night. Alternate them.' },
       { kind: 'warn', text: 'Your skin is tight this week (32% humidity). Start at 2× a week.' },
     ])
     expect(verdict.fit).toBe('Tuesday & Saturday evenings, after cleanser. Retinol moves to the other nights.')
@@ -82,8 +82,8 @@ describe('analyzeProduct', () => {
       NORMAL,
     )
     expect(v.reasons.filter((r) => r.kind === 'warn').map((r) => r.text)).toEqual([
-      'Fragrance is high on the list — a common trigger for sensitive skin.',
-      'Denatured alcohol is high on the list — it can sting and dry sensitive skin.',
+      'Fragrance is high on the list, a common trigger for sensitive skin.',
+      'Denatured alcohol is high on the list. It can sting and dry sensitive skin.',
     ])
     expect(v.level).toBe('not-now')
   })

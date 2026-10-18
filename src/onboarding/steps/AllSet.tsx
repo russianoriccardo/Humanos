@@ -23,7 +23,7 @@ export function AllSet({ answers, onBack, onComplete }: AllSetProps) {
         <div className="flex flex-col items-center gap-2">
           <PrimaryButton onClick={onComplete}>Enter your hub</PrimaryButton>
           <SecondaryButton onClick={onBack}>Back</SecondaryButton>
-          <p className="text-sm text-muted">You can edit modules anytime in Settings.</p>
+          <p className="text-sm text-muted">You can add or remove modules from your dashboard anytime.</p>
         </div>
       }
     >

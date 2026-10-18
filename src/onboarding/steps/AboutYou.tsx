@@ -26,14 +26,36 @@ const ACTIVITY_OPTIONS: { label: string; value: Activity }[] = [
   { label: 'High', value: 'high' },
 ]
 
+const BOUNDS = {
+  age: { min: 13, max: 100, noun: 'an age' },
+  height: { min: 100, max: 250, noun: 'a height in cm' },
+  weight: { min: 30, max: 300, noun: 'a weight in kg' },
+}
+
+// Only once something is typed: an empty field just keeps Continue disabled.
+function rangeError(value: string, field: keyof typeof BOUNDS) {
+  const { min, max, noun } = BOUNDS[field]
+  const n = Number(value.trim().replace(',', '.'))
+  if (value.trim() === '' || (Number.isFinite(n) && n >= min && n <= max)) return undefined
+  return `Enter ${noun} between ${min} and ${max}.`
+}
+
 export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYouProps) {
+  const errors = {
+    age: rangeError(answers.age, 'age'),
+    height: rangeError(answers.height, 'height'),
+    weight: rangeError(answers.weight, 'weight'),
+  }
   const isValid =
     answers.name.trim() !== '' &&
     answers.age.trim() !== '' &&
     answers.sex.trim() !== '' &&
     answers.height.trim() !== '' &&
     answers.weight.trim() !== '' &&
-    answers.activity !== null
+    answers.activity !== null &&
+    !errors.age &&
+    !errors.height &&
+    !errors.weight
 
   return (
     <Screen
@@ -80,7 +102,7 @@ export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYou
             enterKeyHint="next"
           />
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 items-start gap-4">
             <Field
               label="Age"
               required
@@ -90,6 +112,7 @@ export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYou
               placeholder="27"
               inputMode="numeric"
               enterKeyHint="next"
+              error={errors.age}
             />
             <Field
               label="Sex"
@@ -102,7 +125,7 @@ export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYou
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 items-start gap-4">
             <Field
               label="Height"
               required
@@ -112,6 +135,7 @@ export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYou
               placeholder="168"
               inputMode="numeric"
               enterKeyHint="next"
+              error={errors.height}
             />
             <Field
               label="Weight"
@@ -122,6 +146,7 @@ export function AboutYou({ answers, onChange, onNext, onBack, onSkip }: AboutYou
               placeholder="58"
               inputMode="numeric"
               enterKeyHint="done"
+              error={errors.weight}
             />
           </div>
 

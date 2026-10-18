@@ -55,7 +55,7 @@ function evaluateRules(ctx: TodayContext, tonight: AdjustedStep[]): Rule[] {
   }
 
   // Barrier — short sleep after training.
-  if (health.sleepMinutes < R.barrierSleepMinutes && health.trainedYesterday) {
+  if (health.sleepMinutes !== null && health.sleepMinutes < R.barrierSleepMinutes && health.trainedYesterday) {
     const slept = formatSleep(health.sleepMinutes)
     const retinoid = tonight.find((s) => s.active.includes('retinoid'))
     const acid = tonight.find((s) => s.active.includes('aha') || s.active.includes('bha'))
@@ -69,11 +69,11 @@ function evaluateRules(ctx: TodayContext, tonight: AdjustedStep[]): Rule[] {
         metric: `${slept} sleep`,
         source: 'Sleep & training · trained yesterday',
         body: target
-          ? `You slept ${slept} and trained yesterday. Skip ${what} tonight — give your barrier a night off.`
-          : `You slept ${slept} and trained yesterday. Keep tonight gentle — your barrier could use a night off.`,
+          ? `You slept ${slept} and trained yesterday. Skip ${what} tonight. Give your barrier a night off.`
+          : `You slept ${slept} and trained yesterday. Keep tonight gentle. Your barrier could use a night off.`,
         routineChanged: !!target,
       },
-      apply: target ? (steps) => skip(steps, target.id, 'Skipped — barrier night off') : undefined,
+      apply: target ? (steps) => skip(steps, target.id, 'Skipped · barrier night off') : undefined,
     })
   }
 
@@ -101,7 +101,7 @@ function evaluateRules(ctx: TodayContext, tonight: AdjustedStep[]): Rule[] {
               const m = steps.find((s) => s.id === moisturizer.id)!
               const rest = steps.filter((s) => s.id !== moisturizer.id)
               const at = rest.findIndex((s) => s.id === serum.id)
-              const moved: AdjustedStep = { ...m, status: m.status === 'skipped' ? m.status : 'moved', note: 'Moved up — dry air' }
+              const moved: AdjustedStep = { ...m, status: m.status === 'skipped' ? m.status : 'moved', note: 'Moved up · dry air' }
               const out = [...rest.slice(0, at), moved, ...rest.slice(at)]
               return out.map((s) =>
                 s.id === serum.id && s.status !== 'skipped' ? { ...s, status: 'moved', note: 'After moisturizer tonight' } : s,
@@ -119,17 +119,21 @@ function evaluateRules(ctx: TodayContext, tonight: AdjustedStep[]): Rule[] {
           metric: `Humidity ${rh}%`,
           source: 'Weather · right now',
           body: oil
-            ? `It's humid (${rh}%). Go lighter tonight — skip the face oil.`
-            : `It's humid (${rh}%). Go lighter tonight — a thin layer of moisturizer is enough.`,
+            ? `It's humid (${rh}%). Go lighter tonight. Skip the face oil.`
+            : `It's humid (${rh}%). Go lighter tonight. A thin layer of moisturizer is enough.`,
           routineChanged: !!oil,
         },
-        apply: oil ? (steps) => skip(steps, oil.id, 'Skipped — humid tonight') : undefined,
+        apply: oil ? (steps) => skip(steps, oil.id, 'Skipped · humid tonight') : undefined,
       })
     }
   }
 
   // Comfort — elevated resting heart rate (no routine change).
-  if (health.restingHr - health.restingHrBaseline >= R.stressHrDelta) {
+  if (
+    health.restingHr !== null &&
+    health.restingHrBaseline !== null &&
+    health.restingHr - health.restingHrBaseline >= R.stressHrDelta
+  ) {
     fired.push({
       tip: {
         id: 'stress',
@@ -137,7 +141,7 @@ function evaluateRules(ctx: TodayContext, tonight: AdjustedStep[]): Rule[] {
         priority: 'comfort',
         metric: `${health.restingHr} bpm resting`,
         source: `Health · your usual is ${health.restingHrBaseline}`,
-        body: `Your resting heart rate is up (${health.restingHr} vs your usual ${health.restingHrBaseline}). Keep tonight simple — cleanse, moisturize, sleep.`,
+        body: `Your resting heart rate is up (${health.restingHr} vs your usual ${health.restingHrBaseline}). Keep tonight simple. Cleanse, moisturize, sleep.`,
         routineChanged: false,
       },
     })

@@ -31,7 +31,7 @@ export function VerdictCard({ check, onAdd, onDismiss }: VerdictCardProps) {
         <h3 className="text-lg leading-snug font-bold text-text">{check.productName}</h3>
         <p className="text-xs text-muted">
           {SOURCE_LABEL[check.source]}
-          {verdict.basis === 'name' ? ' · based on the name only — add the ingredient list for a precise check' : ` · ${check.ingredients.length} ingredients read`}
+          {verdict.basis === 'name' ? ' · based on the name only. Add the ingredient list for a precise check' : ` · ${check.ingredients.length} ingredients read`}
         </p>
       </div>
 

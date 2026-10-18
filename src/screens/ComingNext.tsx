@@ -19,7 +19,7 @@ export function ComingNext({ moduleId, onBack }: ComingNextProps) {
           </span>
         )}
         <h1 className="text-[26px] leading-tight font-bold">{module?.name ?? 'Module'} home</h1>
-        <p className="max-w-[280px] text-base text-muted">Coming next — this is the screen we design after setup.</p>
+        <p className="max-w-[280px] text-base text-muted">Coming next. This is the screen we design after setup.</p>
       </div>
     </Screen>
   )

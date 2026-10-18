@@ -27,6 +27,7 @@ import { typedNameVerdict } from './skincare/ask/typedVerdict'
 import {
   makeReminder,
   reminderIdFor,
+  isModuleReminder,
   requestPermission,
   showSystemNotification,
   splitDue,
@@ -77,7 +78,7 @@ function App() {
   const [route, setRoute] = useState<Route>(() => ({ name: state.onboardingDone ? 'dashboard' : 'onboarding' }))
   const [direction, setDirection] = useState<1 | -1>(1)
   // Dashboard 13 lasts until the user leaves the dashboard; the toast only shows once within it.
-  const [freshSetup, setFreshSetup] = useState(false)
+  const [freshModuleId, setFreshModuleId] = useState<string | null>(null)
   const [toastPending, setToastPending] = useState(false)
   // "Edit routine" re-runs setup and should come back to the module, not the dashboard.
   const [editingRoutine, setEditingRoutine] = useState(false)
@@ -98,7 +99,7 @@ function App() {
 
   function go(name: RouteName, dir: 1 | -1 = 1, moduleId?: string) {
     if (name !== 'dashboard') {
-      setFreshSetup(false)
+      setFreshModuleId(null)
       setToastPending(false)
     }
     setDirection(dir)
@@ -165,7 +166,7 @@ function App() {
   async function remindForTip(tip: Tip) {
     if (!tip.action) return
     const reminder = makeReminder(
-      reminderIdFor(tip, dateKey()),
+      reminderIdFor('skincare', tip, dateKey()),
       todayAt(tip.action.at),
       'Time to reapply SPF',
       tip.body.replace(/ Reapply SPF around .*$/, ' Reapply now.'),
@@ -178,10 +179,10 @@ function App() {
 
   async function remindForScan(dayKey: string) {
     const reminder = makeReminder(
-      `scan:${dayKey}`,
+      `skincare:scan:${dayKey}`,
       new Date(`${dayKey}T09:00:00`).toISOString(),
       'Your 14-day scan',
-      'Same window, same light, no makeup — so the comparison is fair.',
+      'Same window, same light, no makeup, so the comparison is fair.',
     )
     setReminders((list) => [...list.filter((r) => r.id !== reminder.id), reminder])
     setModuleToast('Reminder set for 09:00')
@@ -245,7 +246,7 @@ function App() {
         seenCoachMark: true,
       }
     })
-    setFreshSetup(false)
+    setFreshModuleId(null)
     setToastPending(false)
   }
 
@@ -283,7 +284,7 @@ function App() {
       return
     }
     go('dashboard')
-    setFreshSetup(true)
+    setFreshModuleId('skincare')
     setToastPending(true)
   }
 
@@ -300,7 +301,7 @@ function App() {
       modulesSetUp: current.modulesSetUp.filter((id) => id !== 'skincare'),
       skincare: initialSkincare,
       skincareActive: null,
-      ui: { ...current.ui, reminders: [], skincareTab: 'today' },
+      ui: { ...current.ui, reminders: current.ui.reminders.filter((r) => !isModuleReminder('skincare', r.id)), skincareTab: 'today' },
     }))
     go('dashboard', -1)
   }
@@ -312,7 +313,7 @@ function App() {
     setPhotoTotal(0)
     document.documentElement.classList.remove('dark')
     setState(initialAppState)
-    setFreshSetup(false)
+    setFreshModuleId(null)
     setToastPending(false)
     setEditingRoutine(false)
     setResetCount((count) => count + 1)
@@ -330,7 +331,7 @@ function App() {
         content: (
           <ProgressTab
             state={state}
-            scanReminderSet={state.ui.reminders.some((r) => r.id === `scan:${scanDay}`)}
+            scanReminderSet={state.ui.reminders.some((r) => r.id === `skincare:scan:${scanDay}`)}
             onRemindScan={remindForScan}
             onToggleKeepPhotos={(keep) => updateActive((a) => ({ ...a, keepScanPhotos: keep }))}
           />
@@ -368,13 +369,8 @@ function App() {
       case 'dashboard':
         return (
           <Dashboard
-            variant={
-              !state.modulesSetUp.includes('skincare') || !state.skincareActive
-                ? 'day0'
-                : freshSetup
-                  ? 'just-set-up'
-                  : 'active'
-            }
+            variant={state.modulesSetUp.length === 0 ? 'day0' : freshModuleId ? 'just-set-up' : 'active'}
+            freshModuleId={freshModuleId}
             state={state}
             showToast={toastPending}
             onToastDone={() => setToastPending(false)}

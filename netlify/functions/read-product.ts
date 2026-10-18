@@ -87,7 +87,7 @@ function json(body: unknown, status: number, headers: Record<string, string>) {
 function cannedAnswer(question: string) {
   const q = question.toLowerCase()
   if (/same night|together|with (my )?retinol|mix|layer/.test(q)) {
-    return 'Not on the same night. Alternate them — the schedule above keeps them on different evenings so your skin gets the benefit of both without the irritation.'
+    return 'Not on the same night. Alternate them. The schedule above keeps them on different evenings, so your skin gets the benefit of both without the irritation.'
   }
   if (/how (long|soon)|results|when will/.test(q)) {
     return 'Give it four to six weeks of consistent use before judging. Your next 14-day scan is a good first checkpoint.'
@@ -192,7 +192,7 @@ export async function handle(req: Request, env: Env, makeClient: (apiKey: string
 
 // Never forwards upstream details (or the key) to the browser.
 function upstreamError(error: unknown, cors: Record<string, string>) {
-  if (error instanceof Anthropic.RateLimitError) return json({ error: 'Busy — try again in a moment' }, 429, cors)
+  if (error instanceof Anthropic.RateLimitError) return json({ error: 'Busy. Try again in a moment.' }, 429, cors)
   if (error instanceof Anthropic.AuthenticationError) return json({ error: 'Service not configured' }, 503, cors)
   if (error instanceof Anthropic.APIConnectionError) return json({ error: 'Service unreachable' }, 504, cors)
   return json({ error: 'Something went wrong' }, 502, cors)

@@ -50,7 +50,7 @@ export function Welcome({ onNext }: WelcomeProps) {
             starts here
           </h1>
           <p className="max-w-[300px] text-base text-muted">
-            Skin, cycle, teeth, food, sleep — everything your body needs, in one calm place.
+            Skin, cycle, teeth, food, sleep. Everything your body needs, in one calm place.
           </p>
         </div>
       </div>

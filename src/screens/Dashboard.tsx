@@ -24,6 +24,8 @@ export type DashboardVariant = 'day0' | 'just-set-up' | 'active'
 
 type DashboardProps = {
   variant: DashboardVariant
+  // The module whose setup just finished (drives the toast, NEW badge and hint).
+  freshModuleId: string | null
   state: AppState
   showToast: boolean
   onToastDone: () => void
@@ -49,6 +51,7 @@ function greeting(now = new Date()) {
 
 export function Dashboard({
   variant,
+  freshModuleId,
   state,
   showToast,
   onToastDone,
@@ -63,7 +66,10 @@ export function Dashboard({
   const [demoOpen, setDemoOpen] = useState(false)
   const { plan, usableWeather, health } = useToday(state)
   const active = state.skincareActive
-  const live = variant !== 'day0' && !!active
+  const live = variant !== 'day0'
+  const skincareLive = live && !!active
+  const fresh = variant === 'just-set-up' ? freshModuleId : null
+  const isLive = (id: string) => (id === 'skincare' ? skincareLive : live && state.modulesSetUp.includes(id))
   const name = state.onboarding.name.trim()
   const modules = orderedModules(state.onboarding.modules)
   const total = modules.length
@@ -72,7 +78,7 @@ export function Dashboard({
 
   const tonight = (plan?.tonight ?? []).filter((step) => step.status !== 'skipped')
   const done = (active?.routineLog[today] ?? []).filter((id) => tonight.some((step) => step.id === id))
-  const showCoachMark = live && !active.seenCoachMark
+  const showCoachMark = skincareLive && !active.seenCoachMark
   const tips = (plan?.tips ?? []).filter((tip) => tip.id !== 'calm')
   const glow = active ? glowBreakdown({ active, weatherLog: state.weatherLog, today }) : null
 
@@ -93,26 +99,29 @@ export function Dashboard({
   }
 
   function rowFor(id: string, index: number): { subtitle: string; tone: ModuleRowTone } {
-    if (variant === 'day0' || !active) {
+    if (variant === 'day0') {
       if (index === 0) return { subtitle: 'Recommended first · 2 min', tone: 'recommended' }
       if (index === 1) return { subtitle: 'Waiting · tomorrow works', tone: 'waiting' }
       return { subtitle: 'Waiting · whenever you like', tone: 'waiting' }
     }
-    if (id === 'skincare') {
-      if (variant === 'just-set-up') return { subtitle: `Tonight · ${done.length} of ${tonight.length} steps`, tone: 'default' }
-      const day = routineDay(active, today)
+    if (id === 'skincare' && skincareLive) {
+      if (fresh === 'skincare') return { subtitle: `Tonight · ${done.length} of ${tonight.length} steps`, tone: 'default' }
+      const day = routineDay(active!, today)
       const tipLabel = tips.length ? `${tips.length} ${tips.length === 1 ? 'tip' : 'tips'} for today` : 'routine as planned'
       return { subtitle: `Day ${day} · ${tipLabel}`, tone: 'default' }
     }
+    if (isLive(id)) return { subtitle: fresh === id ? 'Just set up · open your hub' : 'Open your hub', tone: 'default' }
     if (id === nextModule) {
       return { subtitle: variant === 'just-set-up' ? 'Up next · tomorrow' : 'Ready to set up · 2 min', tone: 'default' }
     }
     return { subtitle: 'Waiting · whenever you like', tone: 'waiting' }
   }
 
-  const glowText = !live
-    ? 'Wakes up with your first log. Set up a module to begin.'
-    : variant === 'just-set-up'
+  const glowText = !skincareLive
+    ? live
+      ? 'Wakes up with your first skincare log.'
+      : 'Wakes up with your first log. Set up a module to begin.'
+    : fresh === 'skincare'
       ? "Your baseline. Log tonight's routine to move it."
       : glowReason(glow!.delta, usableWeather, health)
 
@@ -131,7 +140,7 @@ export function Dashboard({
 
   const overlay = (
     <>
-      {showToast && <Toast message="Skincare is set up" onDone={onToastDone} />}
+      {showToast && freshModuleId && <Toast message={`${moduleName(freshModuleId)} is set up`} onDone={onToastDone} />}
 
       {demoOpen && (
         <DemoPanel
@@ -148,8 +157,8 @@ export function Dashboard({
   )
 
   const skincareBody = (() => {
-    if (!live) return null
-    if (variant === 'just-set-up') {
+    if (!skincareLive) return null
+    if (fresh === 'skincare') {
       const steps = plan?.tonight ?? []
       return steps.length > 0 ? (
         <div role="group" aria-label="Tonight's routine" className="flex flex-wrap gap-2">
@@ -195,7 +204,7 @@ export function Dashboard({
     <Screen header={header} footer={<BottomNav active="home" />} overlay={overlay}>
       <div className="flex flex-col gap-4 pt-2" data-variant={variant}>
         <section className="flex items-center gap-4 rounded-[20px] border border-border bg-surface p-5">
-          <GlowScoreRing score={live ? (variant === 'just-set-up' ? rules.glow.baseline : glow!.score) : null} />
+          <GlowScoreRing score={skincareLive ? (fresh === 'skincare' ? rules.glow.baseline : glow!.score) : null} />
           <div className="flex flex-col gap-1">
             <Eyebrow>Glow score</Eyebrow>
             <p className="text-sm leading-relaxed text-text">{glowText}</p>
@@ -204,14 +213,14 @@ export function Dashboard({
 
         {variant === 'day0' && (
           <HintCard eyebrow={`Daily setup · 1 of ${total}`}>
-            Pick one module to set up today — about 2 minutes. One a day is plenty.
+            Pick one module to set up today. About 2 minutes. One a day is plenty.
           </HintCard>
         )}
         {variant === 'just-set-up' && (
           <HintCard eyebrow={`Daily setup · ${state.modulesSetUp.length} of ${total} done`}>
             {nextModule
-              ? `Skincare is live. ${moduleName(nextModule)} is next — tomorrow is plenty.`
-              : "Skincare is live. That's every module you picked — nicely done."}
+              ? `${moduleName(freshModuleId ?? '')} is live. ${moduleName(nextModule)} is next. Tomorrow is plenty.`
+              : `${moduleName(freshModuleId ?? '')} is live. That's every module you picked. Nicely done.`}
           </HintCard>
         )}
 
@@ -219,7 +228,8 @@ export function Dashboard({
           <Eyebrow>Your modules</Eyebrow>
           {modules.map((id, index) => {
             const { subtitle, tone } = rowFor(id, index)
-            const isLiveSkincare = live && id === 'skincare'
+            const moduleLive = isLive(id)
+            const isLiveSkincare = moduleLive && id === 'skincare'
             return (
               <div key={id} className="flex flex-col gap-3">
                 <ModuleCard
@@ -228,11 +238,11 @@ export function Dashboard({
                   icon={MODULE_ICONS[id]}
                   subtitle={subtitle}
                   tone={tone}
-                  childrenInButton={isLiveSkincare && variant === 'active'}
-                  onClick={() => (isLiveSkincare ? onOpenModule(id) : onStartModule(id))}
+                  childrenInButton={isLiveSkincare && fresh !== 'skincare'}
+                  onClick={() => (moduleLive ? onOpenModule(id) : onStartModule(id))}
                   trailing={
-                    isLiveSkincare ? (
-                      variant === 'just-set-up' ? (
+                    moduleLive ? (
+                      fresh === id ? (
                         <span className="shrink-0 rounded-full bg-accent px-2.5 py-1 text-[11px] font-bold tracking-[1px] text-on-accent">
                           NEW
                         </span>

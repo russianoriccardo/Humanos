@@ -48,7 +48,7 @@ export function glowReason(delta: number, weather: WeatherSnapshot | null, healt
   if (delta <= 0) return "Same as your baseline. Log tonight's routine to move it."
   const lead = `+${delta} since your baseline.`
   if (weather && weather.current.humidity < rules.today.dryHumidityBelow) return `${lead} Holding up despite the dry air.`
-  if (weather && weather.uvMax >= rules.today.uvReapplyMin) return `${lead} Keep the SPF going — UV is high today.`
-  if (health.sleepMinutes < rules.today.barrierSleepMinutes) return `${lead} Holding steady after a short night.`
+  if (weather && weather.uvMax >= rules.today.uvReapplyMin) return `${lead} Keep the SPF going, UV is high today.`
+  if (health.sleepMinutes !== null && health.sleepMinutes < rules.today.barrierSleepMinutes) return `${lead} Holding steady after a short night.`
   return `${lead} Consistency is doing the work.`
 }

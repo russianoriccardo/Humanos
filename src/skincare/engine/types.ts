@@ -1,14 +1,15 @@
 import type { SkinReading, SkincareGoal } from '../../state/appState'
 import type { Active, RoutineStep } from '../routine'
 
-export type HealthScenario = 'restful' | 'shortSleepTrained' | 'stressed'
+export type HealthScenario = 'none' | 'restful' | 'shortSleepTrained' | 'stressed'
 
 export type HealthSnapshot = {
   scenario: HealthScenario
-  sleepMinutes: number
-  trainedYesterday: boolean
-  restingHr: number
-  restingHrBaseline: number
+  // null = no data (a new user with no wearable / health access): rules that need it don't fire.
+  sleepMinutes: number | null
+  trainedYesterday: boolean | null
+  restingHr: number | null
+  restingHrBaseline: number | null
 }
 
 // What the engine needs from the weather service: today's values in local time.

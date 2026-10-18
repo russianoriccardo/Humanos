@@ -14,12 +14,12 @@ const COPY = {
     title: 'Which products do you use today?',
     subtitle: 'Tap all that apply. Add your own too.',
     none: "I don't use any products yet",
-    hint: '3 products is a great start. The AI will suggest what to add — and when.',
+    hint: '3 products is a great start. The AI will suggest what to add, and when.',
   },
   B: {
     title: 'What would you like to start with?',
-    subtitle: "Pick up to 3 — we'll keep it simple.",
-    none: 'Not sure — build it for me',
+    subtitle: "Pick up to 3. We'll keep it simple.",
+    none: 'Not sure, build it for me',
     hint: 'A three-step routine is the one people actually keep.',
   },
 }

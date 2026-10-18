@@ -41,7 +41,7 @@ export function DemoPanel({ demo, canJumpCycle, onChange, onJumpCycle, onSimulat
         <div className="flex items-center justify-between px-6 pt-5 pb-2">
           <div>
             <p className="text-base font-semibold text-text">Demo panel</p>
-            <p className="text-sm text-muted">For demos only — users never see this.</p>
+            <p className="text-sm text-muted">For demos only. Users never see this.</p>
           </div>
           <button
             type="button"

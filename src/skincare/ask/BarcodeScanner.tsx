@@ -114,7 +114,7 @@ export function BarcodeScanner({ onCode, onCancel, onUsePhoto }: BarcodeScannerP
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center">
             <CameraOff size={28} strokeWidth={1.6} className="text-accent" aria-hidden />
             <p className="text-base font-semibold">Camera access is off</p>
-            <p className="text-sm">Allow the camera in your browser settings — or snap the ingredient list instead.</p>
+            <p className="text-sm">Allow the camera in your browser settings, or snap the ingredient list instead.</p>
           </div>
         )}
       </div>

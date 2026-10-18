@@ -70,7 +70,7 @@ export function analyzeProduct(input: ProductInput, profile: Profile, routine: R
     const hit = found.find((f) => wanted.includes(f.active) && !f.common)
     if (hit) reasons.push({ kind: 'match', text: `${hit.label} works toward your goal: ${GOAL_LABEL[goal]}.` })
     else if (goal === 'sensitivity' && basis === 'ingredients' && !has(found, 'fragrance')) {
-      reasons.push({ kind: 'match', text: 'Fragrance-free — the safest kind of formula for sensitive skin.' })
+      reasons.push({ kind: 'match', text: 'Fragrance-free, the safest kind of formula for sensitive skin.' })
     }
   }
 
@@ -78,22 +78,22 @@ export function analyzeProduct(input: ProductInput, profile: Profile, routine: R
   const routineRetinoid = routineWith(routine, 'retinoid')
   const routineAcid = routineWith(routine, ...EXFOLIANTS)
   if (has(found, 'retinoid') && routineRetinoid) {
-    reasons.push({ kind: 'warn', text: `You already use ${routineRetinoid.name.toLowerCase()}. Two retinoids at once is too much — pick one.` })
+    reasons.push({ kind: 'warn', text: `You already use ${routineRetinoid.name.toLowerCase()}. Two retinoids at once is too much. Pick one.` })
     blocking = true
   } else if (has(found, ...EXFOLIANTS) && routineRetinoid) {
-    reasons.push({ kind: 'warn', text: `Clashes with ${routineRetinoid.name.toLowerCase()}. Never the same night — alternate them.` })
+    reasons.push({ kind: 'warn', text: `Clashes with ${routineRetinoid.name.toLowerCase()}. Never the same night. Alternate them.` })
   } else if (has(found, 'retinoid') && routineAcid) {
-    reasons.push({ kind: 'warn', text: `Clashes with your ${routineAcid.name.toLowerCase()}. Never the same night — alternate them.` })
+    reasons.push({ kind: 'warn', text: `Clashes with your ${routineAcid.name.toLowerCase()}. Never the same night. Alternate them.` })
   }
   if (has(found, ...EXFOLIANTS) && routineAcid) {
-    reasons.push({ kind: 'warn', text: `You already exfoliate with ${routineAcid.name.toLowerCase()}. Doubling up thins your barrier — swap, don't add.` })
+    reasons.push({ kind: 'warn', text: `You already exfoliate with ${routineAcid.name.toLowerCase()}. Doubling up thins your barrier. Swap, don't add.` })
     blocking = true
   }
   if (has(found, 'bpo') && routineRetinoid) {
     reasons.push({ kind: 'warn', text: `Benzoyl peroxide deactivates ${routineRetinoid.name.toLowerCase()}. Mornings for this, nights for that.` })
   }
   if (has(found, 'vitamin-c') && (routineAcid || routineRetinoid)) {
-    reasons.push({ kind: 'warn', text: 'Vitamin C works best away from acids and retinol — keep it to mornings.' })
+    reasons.push({ kind: 'warn', text: 'Vitamin C works best away from acids and retinol. Keep it to mornings.' })
   }
 
   // ! Today's conditions
@@ -101,14 +101,14 @@ export function analyzeProduct(input: ProductInput, profile: Profile, routine: R
     reasons.push({ kind: 'warn', text: `Your skin is tight this week (${today.humidity}% humidity). Start at 2× a week.` })
   }
   if (has(found, ...STRONG) && today.uvMax !== null && today.uvMax >= rules.today.uvReapplyMin) {
-    reasons.push({ kind: 'warn', text: `UV is high today (${Math.round(today.uvMax)}). This makes skin sun-sensitive — evenings only, and never skip SPF.` })
+    reasons.push({ kind: 'warn', text: `UV is high today (${Math.round(today.uvMax)}). This makes skin sun-sensitive. Evenings only, and never skip SPF.` })
   }
 
   // ! Sensitive skin + irritants high on the list
   if (goal === 'sensitivity') {
     const high = (a: Active) => found.some((f) => f.active === a && f.position < P.highInListTop)
-    if (high('fragrance')) reasons.push({ kind: 'warn', text: 'Fragrance is high on the list — a common trigger for sensitive skin.' })
-    if (high('alcohol')) reasons.push({ kind: 'warn', text: 'Denatured alcohol is high on the list — it can sting and dry sensitive skin.' })
+    if (high('fragrance')) reasons.push({ kind: 'warn', text: 'Fragrance is high on the list, a common trigger for sensitive skin.' })
+    if (high('alcohol')) reasons.push({ kind: 'warn', text: 'Denatured alcohol is high on the list. It can sting and dry sensitive skin.' })
     if ((high('fragrance') || high('alcohol')) && has(found, ...STRONG)) blocking = true
   }
 
@@ -142,7 +142,7 @@ function schedule(name: string, found: FoundActive[], routine: RoutineStep[], to
     fit = 'Every morning, as the last step.'
   } else if (has(found, 'bpo')) {
     step.when = routineWith(routine, 'retinoid') ? 'am' : 'pm'
-    fit = step.when === 'am' ? `Mornings, ${where} — away from your retinol at night.` : `Evenings, ${where}.`
+    fit = step.when === 'am' ? `Mornings, ${where}, away from your retinol at night.` : `Evenings, ${where}.`
   } else if (has(found, 'vitamin-c')) {
     step.when = 'am'
     fit = `Mornings, ${where} and before SPF.`

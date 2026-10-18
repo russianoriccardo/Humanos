@@ -17,6 +17,8 @@ type FieldProps = {
   options?: FieldOption[]
   inputMode?: 'text' | 'numeric' | 'decimal'
   enterKeyHint?: 'next' | 'done'
+  // One inline line under the field; also marks the input invalid.
+  error?: string
 }
 
 const inputStyles =
@@ -33,8 +35,10 @@ export function Field({
   options,
   inputMode,
   enterKeyHint,
+  error,
 }: FieldProps) {
   const id = useId()
+  const errorId = `${id}-error`
 
   return (
     <div className="flex flex-col gap-2">
@@ -75,7 +79,9 @@ export function Field({
             placeholder={placeholder}
             inputMode={inputMode}
             enterKeyHint={enterKeyHint}
-            className={[inputStyles, suffix ? 'pr-12' : ''].join(' ')}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            className={[inputStyles, suffix ? 'pr-12' : '', error ? 'border-warning focus:border-warning focus:ring-warning' : ''].join(' ')}
           />
           {suffix && (
             <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-muted">
@@ -83,6 +89,12 @@ export function Field({
             </span>
           )}
         </div>
+      )}
+
+      {error && (
+        <p id={errorId} className="text-xs text-warning">
+          {error}
+        </p>
       )}
     </div>
   )

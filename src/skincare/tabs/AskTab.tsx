@@ -118,7 +118,7 @@ export function AskTab({ state, onActiveChange, onToast }: AskTabProps) {
       if (found) runCheck('barcode', found.productName, found.ingredients, false)
       else {
         setNotice({
-          text: "We don't know this one yet — snap the ingredient list instead.",
+          text: "We don't know this one yet. Snap the ingredient list instead.",
           action: { label: 'Snap the ingredient list', run: () => fileRef.current?.click() },
         })
       }
@@ -190,7 +190,7 @@ export function AskTab({ state, onActiveChange, onToast }: AskTabProps) {
     <div className="flex min-h-full flex-col gap-5">
       <TabIntro
         title="Will it work for my skin?"
-        subtitle="Show us any product — we'll check it against your skin, your goal and tonight's routine."
+        subtitle="Show us any product. We'll check it against your skin, your goal and tonight's routine."
       />
 
       <input
@@ -238,7 +238,7 @@ export function AskTab({ state, onActiveChange, onToast }: AskTabProps) {
       </section>
 
       <div ref={resultRef} className="flex scroll-mt-4 flex-col gap-5">
-      {checks.length === 0 && !busy && <HintCard>Try it on something you saw today — an ad, a reel, a shelf.</HintCard>}
+      {checks.length === 0 && !busy && <HintCard>Try it on something you saw today. An ad, a reel, a shelf.</HintCard>}
 
       {busy && (
         <div aria-live="polite" aria-busy="true" className="flex flex-col gap-2">

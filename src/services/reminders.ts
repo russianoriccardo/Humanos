@@ -32,10 +32,12 @@ export function todayAt(clock: string, now = new Date()) {
   return at.toISOString()
 }
 
-// One reminder per tip per day.
-export function reminderIdFor(tip: { id: string }, day: string) {
-  return `${tip.id}:${day}`
+// One reminder per tip per day. The module prefix lets a module reset clear only its own reminders.
+export function reminderIdFor(moduleId: string, tip: { id: string }, day: string) {
+  return `${moduleId}:${tip.id}:${day}`
 }
+
+export const isModuleReminder = (moduleId: string, id: string) => id.startsWith(`${moduleId}:`)
 
 export function makeReminder(id: string, at: string, title: string, body: string): Reminder {
   return { id, at, title, body }

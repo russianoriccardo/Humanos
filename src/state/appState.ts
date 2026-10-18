@@ -81,7 +81,7 @@ export const initialSkincare: SkincareSetup = {
 }
 
 export const initialDemo: DemoState = {
-  scenario: 'shortSleepTrained',
+  scenario: 'none',
   outdoorWindow: { start: '12:30', end: '13:30' },
 }
 
@@ -106,6 +106,8 @@ export const initialAppState: AppState = {
 type LegacyUi = { coachMarkSeen?: boolean; tonight?: { date: string; done: string[] } }
 
 // `createActive` is injected to keep this module free of the reading/routine logic.
+const REMINDER_MODULES = ['skincare', 'sleep']
+
 export function loadAppState(createActive: (setup: SkincareSetup) => SkincareActive): AppState {
   try {
     const raw = localStorage.getItem(STATE_KEY)
@@ -123,7 +125,10 @@ export function loadAppState(createActive: (setup: SkincareSetup) => SkincareAct
           skincareTab: parsed.ui?.skincareTab ?? initialUi.skincareTab,
           locationChoice: parsed.ui?.locationChoice ?? initialUi.locationChoice,
           city: parsed.ui?.city ?? initialUi.city,
-          reminders: parsed.ui?.reminders ?? [],
+          // Ids from before module prefixes were all skincare.
+          reminders: (parsed.ui?.reminders ?? []).map((r) =>
+            REMINDER_MODULES.some((m) => r.id.startsWith(`${m}:`)) ? r : { ...r, id: `skincare:${r.id}` },
+          ),
         },
       }
       // Set up before SkincareActive existed: build it, carrying over tonight's ticks and the coach mark.

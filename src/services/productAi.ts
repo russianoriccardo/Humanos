@@ -36,7 +36,7 @@ const DEMO_READ: ReadResult = {
 
 function demoAnswer(question: string) {
   return /same night|together|retinol|mix|layer/i.test(question)
-    ? 'Not on the same night. Alternate them — the schedule above keeps them apart so you get both benefits without the irritation.'
+    ? 'Not on the same night. Alternate them. The schedule above keeps them apart, so you get both benefits without the irritation.'
     : 'Start slowly with the schedule above and patch-test for 24 hours first. If your skin feels tight, skip a night and moisturize.'
 }
 
@@ -65,7 +65,7 @@ async function call<T>(body: unknown, signal?: AbortSignal): Promise<T | 'unreac
   // No function deployed on this host (Vite dev server, static hosting).
   if (response.status === 404 || response.status === 405) return 'unreachable'
   const json = (await response.json().catch(() => ({}))) as T & { error?: string }
-  if (!response.ok) throw new ProductAiError(json.error ?? "Couldn't read that — try again")
+  if (!response.ok) throw new ProductAiError(json.error ?? "Couldn't read that. Try again.")
   return json
 }
 
