@@ -25,7 +25,9 @@ import { IntentStep } from './sleep/setup/IntentStep'
 import { ConstraintStep } from './sleep/setup/ConstraintStep'
 import { HealthStep } from './sleep/setup/HealthStep'
 import { MirrorStep } from './sleep/setup/MirrorStep'
-import { createSleepActive } from './sleep/plan'
+import { createSleepActive, defaultSleepTab, nextAt, nightKeyFor, retime, sleepReminders, tonightLightsOut } from './sleep/plan'
+import type { SleepTip } from './sleep/rules'
+import { SleepModule } from './screens/SleepModule'
 import { createSkincareActive, SCAN_CYCLE_DAYS } from './skincare/active'
 import type { Tip } from './skincare/engine/types'
 import { WeatherProvider } from './state/weather'
@@ -44,6 +46,7 @@ import {
   clearDemoStorage,
   initialAppState,
   initialSkincare,
+  initialSleep,
   loadAppState,
   saveAppState,
   type AppState,
@@ -53,6 +56,7 @@ import {
   type SkincareActive,
   type SkincareSetup,
   type SleepActive,
+  type SleepCheckIn,
   type SleepSetup,
   type UiState,
 } from './state/appState'
@@ -100,6 +104,8 @@ function App() {
   const [toastPending, setToastPending] = useState(false)
   // "Edit routine" re-runs setup and should come back to the module, not the dashboard.
   const [editingRoutine, setEditingRoutine] = useState(false)
+  // "Edit sleep times" reruns the bedtime step and comes back to Sleep.
+  const [editingSleepTimes, setEditingSleepTimes] = useState(false)
   const [moduleToast, setModuleToast] = useState<string | null>(null)
   const [alert, setAlert] = useState<Alert | null>(null)
   const [resetCount, setResetCount] = useState(0)
@@ -186,6 +192,25 @@ function App() {
     const timer = window.setTimeout(() => setReminders((list) => [...list]), Math.min(next - Date.now() + 250, 2 ** 31 - 1))
     return () => window.clearTimeout(timer)
   }, [state.ui.reminders])
+
+  // Sleep reminders roll forward: whenever the app runs, tonight's wind down and the next check in exist.
+  const sleepActive = state.sleepActive
+  const sleepReminderKey = sleepActive?.reminderOn
+    ? `${tonightLightsOut(sleepActive, nightKeyFor())}|${sleepActive.wake}|${dateKey()}`
+    : null
+  useEffect(() => {
+    if (!sleepReminderKey || !sleepActive) return
+    const wanted = sleepReminders(tonightLightsOut(sleepActive, nightKeyFor()), sleepActive.wake).filter(
+      (r) => !(r.id.startsWith('sleep:checkin:') && sleepActive.checkIns[r.id.slice('sleep:checkin:'.length)]),
+    )
+    setReminders((list) => {
+      const ids = new Set(list.map((r) => r.id))
+      const missing = wanted.filter((r) => !ids.has(r.id))
+      return missing.length ? [...list, ...missing] : list
+    })
+    // Keyed on the times and the day, not on every check in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sleepReminderKey])
 
   async function remindForTip(tip: Tip) {
     if (!tip.action) return
@@ -313,8 +338,73 @@ function App() {
   }
 
   function sleepStep(offset: 1 | -1) {
+    if (editingSleepTimes) {
+      setEditingSleepTimes(false)
+      if (offset === 1) applySleepTimes()
+      go('sleep', -1)
+      return
+    }
     const target = SLEEP_FLOW[SLEEP_FLOW.indexOf(route.name) + offset]
     go(target ?? 'dashboard', offset)
+  }
+
+  function applySleepTimes() {
+    setState((current) => {
+      const { bedtime, wake } = current.sleep
+      if (!current.sleepActive || !bedtime || !wake) return current
+      return {
+        ...current,
+        sleepActive: retime(current.sleepActive, bedtime, wake, dateKey()),
+        // Dropped so the rolling reminders come back at the new times.
+        ui: {
+          ...current.ui,
+          reminders: current.ui.reminders.filter((r) => !/^sleep:(winddown|checkin):/.test(r.id)),
+        },
+      }
+    })
+    setModuleToast('Sleep times updated')
+  }
+
+  function editSleepTimes() {
+    setEditingSleepTimes(true)
+    go('sleep/constraint')
+  }
+
+  function saveMorning(checkIn: SleepCheckIn) {
+    const today = dateKey()
+    updateSleepActive((a) => ({ ...a, checkIns: { ...a.checkIns, [today]: checkIn } }))
+    setReminders((list) => list.filter((r) => r.id !== `sleep:checkin:${today}`))
+    setModuleToast('Morning saved')
+  }
+
+  async function remindForSleepTip(tip: SleepTip) {
+    if (!tip.action) return
+    const reminder = makeReminder(
+      `sleep:${tip.id}:${nightKeyFor()}`,
+      nextAt(tip.action.at, new Date()).toISOString(),
+      'Time for a warm shower',
+      'It helps your body cool down in time for lights out.',
+    )
+    setReminders((list) => [...list.filter((r) => r.id !== reminder.id), reminder])
+    setModuleToast(`Reminder set for ${tip.action.at}`)
+    await requestPermission()
+  }
+
+  async function toggleSleepReminder(on: boolean) {
+    updateSleepActive((a) => ({ ...a, reminderOn: on }))
+    if (on) await requestPermission()
+    else setReminders((list) => list.filter((r) => !r.id.startsWith('sleep:winddown:')))
+  }
+
+  function resetSleepModule() {
+    setState((current) => ({
+      ...current,
+      modulesSetUp: current.modulesSetUp.filter((id) => id !== 'sleep'),
+      sleep: initialSleep,
+      sleepActive: null,
+      ui: { ...current.ui, reminders: current.ui.reminders.filter((r) => !isModuleReminder('sleep', r.id)), sleepTab: null },
+    }))
+    go('dashboard', -1)
   }
 
   function completeSleep(reminders: Reminder[]) {
@@ -435,7 +525,7 @@ function App() {
             onOpenModule={(moduleId, sleepTab) => {
               if (moduleId === 'skincare') go('skincare')
               else if (moduleId === 'sleep') {
-                if (sleepTab) updateUi({ sleepTab })
+                updateUi({ sleepTab: sleepTab ?? defaultSleepTab(state.sleepActive) })
                 go('sleep')
               } else go('module/home', 1, moduleId)
             }}
@@ -513,8 +603,27 @@ function App() {
         return <MirrorStep setup={state.sleep} onBack={() => sleepStep(-1)} onDone={completeSleep} />
       // The Sleep module itself is built next; until then it's a placeholder.
       case 'sleep':
+        return state.sleepActive ? (
+          <SleepModule
+            state={state}
+            active={state.sleepActive}
+            tab={state.ui.sleepTab ?? 'tonight'}
+            toast={moduleToast}
+            onToastDone={() => setModuleToast(null)}
+            onTabChange={(sleepTab) => updateUi({ sleepTab })}
+            onBack={() => go('dashboard', -1)}
+            onActiveChange={updateSleepActive}
+            onSaveMorning={saveMorning}
+            onRemind={remindForSleepTip}
+            onToggleReminder={toggleSleepReminder}
+            onRemoveReminder={(id) => setReminders((list) => list.filter((r) => r.id !== id))}
+            onEditTimes={editSleepTimes}
+            onResetModule={resetSleepModule}
+          />
+        ) : null
+      // The session player is built next; until then it's a placeholder.
       case 'sleep/session':
-        return <ComingNext moduleId="sleep" onBack={() => go('dashboard', -1)} />
+        return <ComingNext moduleId="sleep" onBack={() => go('sleep', -1)} />
     }
   })()
 

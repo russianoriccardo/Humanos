@@ -2,7 +2,7 @@
 // calculation wraps around midnight.
 import { dateKey, daysBetween, formatClock, parseClock } from '../lib/dates'
 import { makeReminder } from '../services/reminders'
-import type { Reminder, SleepActive, SleepAnchor, SleepIntent, SleepSetup } from '../state/appState'
+import type { Reminder, SleepActive, SleepAnchor, SleepIntent, SleepSetup, SleepTab } from '../state/appState'
 
 export const SLEEP_NEED_MINUTES = 7 * 60 + 30
 export const PLAN_STEP_MINUTES = 15
@@ -60,10 +60,13 @@ export function lightsOutFor(plan: Plan, week: number) {
   return shiftClock(plan.planStart, -Math.min(PLAN_STEP_MINUTES * Math.max(0, week), minutesToGoal(plan)))
 }
 
-// Weeks until lights out reaches the goal, counting the starting week.
+// Weeks until lights out reaches the goal. Week 1 carries the first shift.
 export function planWeeks(plan: Plan) {
-  return Math.ceil(minutesToGoal(plan) / PLAN_STEP_MINUTES) + 1
+  return Math.max(1, Math.ceil(minutesToGoal(plan) / PLAN_STEP_MINUTES))
 }
+
+// Minutes still to go from a lights out to the goal.
+export const minutesFromGoal = (lightsOut: string, goal: string) => wrap(parseClock(lightsOut) - parseClock(goal))
 
 const ANCHOR_LINE: Record<SleepAnchor | 'none', string> = {
   well: 'A good base. Our job is to protect it.',
@@ -136,7 +139,7 @@ export function createSleepActive(setup: SleepSetup, reminderOn: boolean, today 
 }
 
 // The next time `clock` comes round after `from`.
-function nextAt(clock: string, from: Date) {
+export function nextAt(clock: string, from: Date) {
   const minutes = parseClock(clock)
   const at = new Date(from)
   at.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
@@ -171,3 +174,24 @@ export const nightNumber = (active: SleepActive, today: string) => daysBetween(a
 export const planWeekFor = (night: number) => Math.floor((Math.max(1, night) - 1) / 7) + 1
 
 export const tonightLightsOut = (active: SleepActive, today: string) => lightsOutFor(active, planWeekFor(nightNumber(active, today)))
+
+// The night a moment belongs to: until 05:00 it's still the previous evening's night.
+export function nightKeyFor(now = new Date()) {
+  const at = new Date(now)
+  if (at.getHours() < 5) at.setDate(at.getDate() - 1)
+  return dateKey(at)
+}
+
+// New weekday times mid plan. Night numbering carries on; tonight takes the first shift from the new
+// bedtime, then the plan keeps moving 15 minutes a week toward the new goal.
+export function retime(active: SleepActive, bedtime: string, wake: string, today: string): SleepActive {
+  const elapsed = planWeekFor(nightNumber(active, today)) - 1
+  return { ...active, planStart: shiftClock(bedtime, PLAN_STEP_MINUTES * elapsed), goal: goalFor(bedtime, wake), wake }
+}
+
+// Mornings first while last night is still unlogged; Tonight otherwise.
+export function defaultSleepTab(active: SleepActive | null, now = new Date()): SleepTab {
+  const today = dateKey(now)
+  if (!active || active.startedAt === today) return 'tonight'
+  return now.getHours() < 11 && !active.checkIns[today] ? 'mornings' : 'tonight'
+}

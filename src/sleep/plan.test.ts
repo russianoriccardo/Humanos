@@ -8,6 +8,8 @@ import {
   goalFor,
   lightsOutFor,
   planWeeks,
+  nightKeyFor,
+  retime,
   sleepReminders,
   tonightLightsOut,
   windowMinutes,
@@ -53,7 +55,7 @@ describe('goal and lights out', () => {
     expect(lightsOutFor(plan, 3)).toBe('23:05')
     expect(lightsOutFor(plan, 4)).toBe('23:00')
     expect(lightsOutFor(plan, 9)).toBe('23:00')
-    expect(planWeeks(plan)).toBe(5)
+    expect(planWeeks(plan)).toBe(4)
   })
 
   it('crosses midnight', () => {
@@ -128,5 +130,22 @@ describe('tonightLightsOut', () => {
     expect(tonightLightsOut(active, '2026-10-01')).toBe('23:35')
     expect(tonightLightsOut(active, '2026-10-07')).toBe('23:35')
     expect(tonightLightsOut(active, '2026-10-08')).toBe('23:20')
+  })
+})
+
+describe('nightKeyFor', () => {
+  it('keeps the small hours on the previous night', () => {
+    expect(nightKeyFor(new Date(2026, 9, 18, 2, 0))).toBe('2026-10-17')
+    expect(nightKeyFor(new Date(2026, 9, 18, 22, 0))).toBe('2026-10-18')
+  })
+})
+
+describe('retime', () => {
+  it('starts tonight from the new bedtime without losing the night count', () => {
+    const active = createSleepActive(setup({ bedtime: '23:50', wake: '06:30' }), true, '2026-10-01')
+    const next = retime(active, '00:20', '07:00', '2026-10-15')
+    expect(next.startedAt).toBe('2026-10-01')
+    expect(tonightLightsOut(next, '2026-10-15')).toBe('00:05')
+    expect(tonightLightsOut(next, '2026-10-22')).toBe('23:50')
   })
 })
