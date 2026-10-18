@@ -52,6 +52,7 @@ import {
   type SkinReading,
   type SkincareActive,
   type SkincareSetup,
+  type SleepActive,
   type SleepSetup,
   type UiState,
 } from './state/appState'
@@ -149,6 +150,9 @@ function App() {
 
   const updateActive = (fn: (active: SkincareActive) => SkincareActive) =>
     setState((current) => (current.skincareActive ? { ...current, skincareActive: fn(current.skincareActive) } : current))
+
+  const updateSleepActive = (fn: (active: SleepActive) => SleepActive) =>
+    setState((current) => (current.sleepActive ? { ...current, sleepActive: fn(current.sleepActive) } : current))
 
   const setReminders = (fn: (reminders: Reminder[]) => Reminder[]) =>
     setState((current) => ({ ...current, ui: { ...current.ui, reminders: fn(current.ui.reminders) } }))
@@ -417,6 +421,7 @@ function App() {
             showToast={toastPending}
             onToastDone={() => setToastPending(false)}
             onActiveChange={updateActive}
+            onSleepActiveChange={updateSleepActive}
             onDemoChange={updateDemo}
             onJumpCycle={jumpScanCycle}
             onSimulate={simulateNineDays}
@@ -427,9 +432,13 @@ function App() {
                   ? go('skincare/routine')
                   : go('sleep/anchor')
             }
-            onOpenModule={(moduleId) =>
-              moduleId === 'skincare' ? go('skincare') : moduleId === 'sleep' ? go('sleep') : go('module/home', 1, moduleId)
-            }
+            onOpenModule={(moduleId, sleepTab) => {
+              if (moduleId === 'skincare') go('skincare')
+              else if (moduleId === 'sleep') {
+                if (sleepTab) updateUi({ sleepTab })
+                go('sleep')
+              } else go('module/home', 1, moduleId)
+            }}
             onReset={resetDemo}
           />
         )

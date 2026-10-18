@@ -1,6 +1,6 @@
 // The sleep plan: pure functions over the setup answers. Clock values are 'HH:MM', 24h, and every
 // calculation wraps around midnight.
-import { dateKey, formatClock, parseClock } from '../lib/dates'
+import { dateKey, daysBetween, formatClock, parseClock } from '../lib/dates'
 import { makeReminder } from '../services/reminders'
 import type { Reminder, SleepActive, SleepAnchor, SleepIntent, SleepSetup } from '../state/appState'
 
@@ -161,3 +161,13 @@ export function sleepReminders(lightsOut: string, wake: string, now = new Date()
     makeReminder(`sleep:checkin:${dateKey(checkIn)}`, checkIn.toISOString(), 'How did you sleep?', "Ten seconds. It's what makes your plan smarter."),
   ]
 }
+
+export const checkInMinutes = (checkIn: { lightsOut: string; wake: string }) => windowMinutes(checkIn.lightsOut, checkIn.wake)
+
+// Night 1 is the setup day.
+export const nightNumber = (active: SleepActive, today: string) => daysBetween(active.startedAt, today) + 1
+
+// Week 1 already carries the first 15 minute shift, matching the setup's "15 minutes earlier tonight".
+export const planWeekFor = (night: number) => Math.floor((Math.max(1, night) - 1) / 7) + 1
+
+export const tonightLightsOut = (active: SleepActive, today: string) => lightsOutFor(active, planWeekFor(nightNumber(active, today)))

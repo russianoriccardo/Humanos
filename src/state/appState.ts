@@ -68,8 +68,12 @@ export type SleepActive = {
 
 export type Reminder = { id: string; at: string; title: string; body: string }
 
+export type SleepTab = 'tonight' | 'winddown' | 'mornings' | 'patterns'
+
 export type UiState = {
   skincareTab: 'today' | 'yoga' | 'progress' | 'ask'
+  // Set when something opens Sleep on a specific tab (e.g. the dashboard's "Log in 10 sec").
+  sleepTab: SleepTab | null
   locationChoice: 'unset' | 'gps' | 'city'
   city: string
   reminders: Reminder[]
@@ -119,6 +123,7 @@ export const initialDemo: DemoState = {
 
 const initialUi: UiState = {
   skincareTab: 'today',
+  sleepTab: null,
   locationChoice: 'unset',
   city: config.fallbackCity.name,
   reminders: [],
@@ -168,6 +173,7 @@ export function loadAppState(createActive: (setup: SkincareSetup) => SkincareAct
         demo: { ...initialDemo, ...parsed.demo },
         ui: {
           skincareTab: parsed.ui?.skincareTab ?? initialUi.skincareTab,
+          sleepTab: parsed.ui?.sleepTab ?? initialUi.sleepTab,
           locationChoice: parsed.ui?.locationChoice ?? initialUi.locationChoice,
           city: parsed.ui?.city ?? initialUi.city,
           // Ids from before module prefixes were all skincare.

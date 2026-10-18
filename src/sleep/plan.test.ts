@@ -9,6 +9,7 @@ import {
   lightsOutFor,
   planWeeks,
   sleepReminders,
+  tonightLightsOut,
   windowMinutes,
 } from './plan'
 
@@ -118,5 +119,14 @@ describe('sleepReminders', () => {
     const [nudge, checkIn] = sleepReminders('00:30', '08:00', new Date(2026, 9, 18, 20, 0))
     expect(nudge.id).toBe('sleep:winddown:2026-10-18')
     expect(checkIn.id).toBe('sleep:checkin:2026-10-19')
+  })
+})
+
+describe('tonightLightsOut', () => {
+  it('starts with the first shift and moves weekly', () => {
+    const active = createSleepActive(setup({ bedtime: '23:50', wake: '06:30' }), true, '2026-10-01')
+    expect(tonightLightsOut(active, '2026-10-01')).toBe('23:35')
+    expect(tonightLightsOut(active, '2026-10-07')).toBe('23:35')
+    expect(tonightLightsOut(active, '2026-10-08')).toBe('23:20')
   })
 })
