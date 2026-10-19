@@ -58,7 +58,7 @@ export function HealthStep({ setup, onChange, onNext, onBack, outcome }: SleepSt
         )}
       </PrimaryButton>
       <SecondaryButton onClick={() => finish('notNow')} disabled={phase === 'waiting'}>
-        Not now
+        Skip for now
       </SecondaryButton>
     </div>
   )
