@@ -8,6 +8,8 @@
   --color-bg: #f7f4ed;
   --color-surface: #ffffff;
   --color-border: #e7e1d4;
+  /* Dashed empty and locked cards. */
+  --color-border-strong: #d5cdbb;
   --color-text: #262a21;
   --color-muted: #65685c;
   --color-accent: #b79a62;
@@ -73,6 +75,7 @@
   --color-bg: #131510;
   --color-surface: #1e2118;
   --color-border: #34382a;
+  --color-border-strong: #4a4e3d;
   --color-text: #f1ede2;
   --color-muted: #9a9c8d;
   --color-accent: #c7a868;

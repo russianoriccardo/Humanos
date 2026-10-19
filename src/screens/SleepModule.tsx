@@ -110,6 +110,7 @@ export function SleepModule({
         today={today}
         night={night}
         skincareLive={state.modulesSetUp.includes('skincare') && !!state.skincareActive}
+        healthConnected={state.sleep.health === 'connected'}
         onOpenSkincare={onOpenSkincare}
       />
     )

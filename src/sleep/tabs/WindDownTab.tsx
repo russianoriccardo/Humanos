@@ -1,4 +1,5 @@
-import { AudioLines, Check, ChevronRight, Footprints, Wind } from 'lucide-react'
+import { AudioLines, Check, CloudRain, Footprints, PersonStanding, Play, Scan, Square, Wind, type LucideIcon } from 'lucide-react'
+import { TabIntro } from '../../skincare/tabs/TabIntro'
 import { dateKey } from '../../lib/dates'
 import { getHealth } from '../../services/health.mock'
 import type { AppState, SleepActive } from '../../state/appState'
@@ -15,7 +16,15 @@ type WindDownTabProps = {
 }
 
 const GROUPS: SessionGroup[] = ['Breathing', 'Body', 'Sound']
-const GROUP_ICONS = { Breathing: Wind, Body: Footprints, Sound: AudioLines }
+const ICONS: Record<string, LucideIcon> = {
+  breath478: Wind,
+  box: Square,
+  yoga: PersonStanding,
+  bodyScan: Scan,
+  legsUp: Footprints,
+  rain: CloudRain,
+  brownNoise: AudioLines,
+}
 const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 const FIRST_SESSION = 'breath478'
 
@@ -26,22 +35,21 @@ function Eyebrow({ children }: { children: string }) {
 }
 
 function SessionRow({ session, detail, onOpen }: { session: SleepSession; detail?: string; onOpen: () => void }) {
-  const Icon = GROUP_ICONS[session.group]
+  const Icon = ICONS[session.id] ?? Wind
   return (
     <button
       type="button"
       onClick={onOpen}
-      className={`flex min-h-16 w-full items-center gap-3 rounded-[16px] border border-border bg-surface px-4 py-3 text-left transition-transform duration-[120ms] motion-safe:active:scale-[0.98] ${focusRing}`}
+      className={`flex w-full items-center gap-3 rounded-[16px] border border-border bg-surface px-3.5 py-3 text-left transition-transform duration-[120ms] motion-safe:active:scale-[0.98] ${focusRing}`}
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-tint text-accent">
         <Icon size={18} aria-hidden />
       </span>
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-base font-semibold text-text">{session.title}</span>
-        <span className="truncate text-sm text-muted">{detail ?? session.blurb}</span>
+      <span className="flex min-w-0 flex-1 flex-col gap-px">
+        <span className="text-[15px] font-semibold text-text">{session.title}</span>
+        <span className="truncate text-[13px] text-muted">{detail ?? session.blurb}</span>
       </span>
-      <span className="shrink-0 text-sm text-muted">{session.minutes ? `${session.minutes} min` : 'Sound'}</span>
-      <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />
+      <span className="shrink-0 text-[13px] font-semibold text-muted">{session.lengthLabel ?? `${session.minutes} min`}</span>
     </button>
   )
 }
@@ -58,46 +66,53 @@ export function WindDownTab({ state, active, night, onStart, onComingSoon }: Win
 
   return (
     <div className="flex flex-col gap-4">
+      <TabIntro eyebrow="Wind down" title="Slow down before lights out" subtitle="Short sessions for the last 30 minutes of your day." />
 
       {favourite ? (
-        <section className="flex flex-col gap-3 rounded-[20px] border-[1.5px] border-accent bg-tint p-5">
+        <section className="flex flex-col gap-3.5 rounded-[20px] border-[1.5px] border-accent bg-tint p-5">
           <div className="flex items-center justify-between gap-3">
             <Eyebrow>{`Tonight's pick · ${favourite.minutes} min`}</Eyebrow>
             <span className="rounded-full bg-accent px-2.5 py-1 text-[10px] font-bold tracking-[1px] text-on-accent uppercase">Works for you</span>
           </div>
-          <p className="text-[22px] leading-tight font-bold text-text">{favourite.title}</p>
-          <p className="text-[15px] leading-relaxed text-text">
-            You've done this {counts[0].count} times. Best right after screens go away at {screensAway}.
-          </p>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[22px] font-bold tracking-[-0.3px] text-text">{favourite.title}</p>
+            <p className="text-[15px] leading-normal text-text">
+              You've done this {counts[0].count} times. Best right after screens go away at {screensAway}.
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => onStart(favourite.id)}
-            className={`h-12 rounded-full bg-cta px-5 text-base font-semibold text-cta-text ${focusRing}`}
+            className={`flex h-12 w-full items-center justify-center gap-2.5 rounded-full bg-cta px-5 text-[15px] font-semibold text-cta-text transition-transform duration-[120ms] motion-safe:active:scale-[0.98] ${focusRing}`}
           >
+            <Play size={16} fill="currentColor" aria-hidden />
             Start
           </button>
         </section>
       ) : (
-        <section className="flex flex-col gap-3 rounded-[20px] border-[1.5px] border-accent bg-tint p-5">
+        <section className="flex flex-col gap-3.5 rounded-[20px] border-[1.5px] border-accent bg-tint p-5">
           <Eyebrow>{`Start here · ${first.minutes} min`}</Eyebrow>
-          <p className="text-[22px] leading-tight font-bold text-text">{first.title}</p>
-          <p className="text-[15px] leading-relaxed text-text">
-            The easiest one to learn. In for 4, hold for 7, out for 8. Most people feel calmer by round three.
-          </p>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[22px] font-bold tracking-[-0.3px] text-text">{first.title}</p>
+            <p className="text-[15px] leading-normal text-text">
+              The easiest one to learn. In for 4, hold for 7, out for 8. Most people feel calmer by round three.
+            </p>
+          </div>
           <button
             type="button"
             onClick={() => onStart(first.id)}
-            className={`h-12 rounded-full bg-cta px-5 text-base font-semibold text-cta-text ${focusRing}`}
+            className={`flex h-12 w-full items-center justify-center gap-2.5 rounded-full bg-cta px-5 text-[15px] font-semibold text-cta-text transition-transform duration-[120ms] motion-safe:active:scale-[0.98] ${focusRing}`}
           >
+            <Play size={16} fill="currentColor" aria-hidden />
             {active.sessions.length === 0 ? 'Start your first session' : 'Start'}
           </button>
         </section>
       )}
 
       <section className="flex flex-col gap-3 rounded-[20px] border border-border bg-surface p-4">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <Eyebrow>This week</Eyebrow>
-          <span className="text-xs text-muted">
+          <span className="text-sm text-muted">
             {week.lastWeek > 0
               ? `${week.thisWeek} so far · ${week.lastWeek} last week`
               : `${week.thisWeek} ${week.thisWeek === 1 ? 'session' : 'sessions'}`}
@@ -108,15 +123,22 @@ export function WindDownTab({ state, active, night, onStart, onComingSoon }: Win
             const done = week.done[i]
             const isToday = i === week.todayIndex
             return (
-              <li key={i} className="flex flex-col items-center gap-1.5">
+              <li
+                key={i}
+                className="flex flex-col items-center gap-1.5"
+                aria-label={`${letter}${done ? ', session done' : ''}${isToday ? ', today' : ''}`}
+              >
                 <span
                   className={[
-                    'flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold',
-                    done ? 'bg-accent text-on-accent' : isToday ? 'border-[1.5px] border-accent text-text' : 'bg-tint text-muted',
+                    'flex h-7 w-7 items-center justify-center rounded-full border-[1.5px]',
+                    done ? 'border-accent bg-accent text-on-accent' : isToday ? 'border-text' : 'border-border',
                   ].join(' ')}
-                  aria-label={`${letter}${done ? ', session done' : ''}${isToday ? ', today' : ''}`}
+                  aria-hidden
                 >
-                  {done ? <Check size={15} strokeWidth={3} aria-hidden /> : letter}
+                  {done && <Check size={14} strokeWidth={3} />}
+                </span>
+                <span className="text-[11px] font-semibold text-muted" aria-hidden>
+                  {letter}
                 </span>
               </li>
             )
@@ -148,7 +170,7 @@ export function WindDownTab({ state, active, night, onStart, onComingSoon }: Win
       {GROUPS.map((group) => (
         <section key={group} className="flex flex-col gap-2">
           <Eyebrow>{group}</Eyebrow>
-          {SESSIONS.filter((s) => s.group === group).map((session) => (
+          {SESSIONS.filter((s) => s.group === group && !s.situational).map((session) => (
             <SessionRow key={session.id} session={session} onOpen={() => open(session)} />
           ))}
         </section>

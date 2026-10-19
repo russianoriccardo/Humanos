@@ -79,9 +79,9 @@ export function TonightTab({ state, active, night, onActiveChange, onRemind, onT
 
       <section className="flex flex-col gap-3 rounded-[20px] border-[1.5px] border-accent bg-tint p-5">
         <div className="flex items-end justify-between gap-3">
-          <div>
+          <div className="flex flex-col gap-2">
             <Eyebrow>Lights out</Eyebrow>
-            <p className="text-[44px] leading-none font-bold text-text">{lightsOut}</p>
+            <p className="text-[44px] leading-none font-bold tracking-[-1px] text-text">{lightsOut}</p>
           </div>
           <div className="text-right">
             <p className="text-sm font-semibold text-text">Up at {active.wake}</p>
@@ -89,19 +89,19 @@ export function TonightTab({ state, active, night, onActiveChange, onRemind, onT
           </div>
         </div>
         <SegmentBar total={totalWeeks} filled={week} label="Plan weeks" />
-        <p className="text-sm text-text">
-          Week {week} of {totalWeeks} · {progress}
+        <p className="text-sm leading-normal text-text">
+          Week {week} of {totalWeeks} · <span className="text-muted">{progress}</span>
         </p>
       </section>
 
-      <section className="flex flex-col gap-1 rounded-[20px] border border-border bg-surface p-4">
-        <div className="flex items-baseline justify-between gap-3 pb-1">
+      <section className="flex flex-col gap-3 rounded-[20px] border border-border bg-surface p-4">
+        <div className="flex items-center justify-between gap-3">
           <Eyebrow>Your wind down</Eyebrow>
-          <span className="text-xs text-muted">
+          <span className="text-sm text-muted">
             {ticked.length} of {plan.steps.length} done
           </span>
         </div>
-        <ul className="flex flex-col">
+        <ul className="flex flex-col divide-y divide-tint">
           {plan.steps.map((step) => {
             const isDone = ticked.includes(step.id)
             return (
@@ -110,11 +110,11 @@ export function TonightTab({ state, active, night, onActiveChange, onRemind, onT
                   type="button"
                   aria-pressed={isDone}
                   onClick={() => toggle(step.id)}
-                  className={`flex min-h-11 w-full items-center gap-3 rounded-[12px] py-2 text-left transition-transform duration-[120ms] motion-safe:active:scale-[0.98] ${focusRing}`}
+                  className={`flex min-h-11 w-full items-center gap-3 rounded-[12px] py-2.5 text-left transition-transform duration-[120ms] motion-safe:active:scale-[0.98] ${focusRing}`}
                 >
-                  <span className="w-12 shrink-0 text-sm font-semibold text-muted tabular-nums">{step.at}</span>
-                  <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="text-base font-semibold text-text">{step.label}</span>
+                  <span className="w-[46px] shrink-0 text-sm font-semibold text-text tabular-nums">{step.at}</span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-px">
+                    <span className="text-[15px] text-text">{step.label}</span>
                     {step.note && <span className="text-xs font-medium text-accent-text">{step.note}</span>}
                   </span>
                   <span
@@ -188,9 +188,14 @@ export function TonightTab({ state, active, night, onActiveChange, onRemind, onT
       )}
 
       <label className="flex cursor-pointer items-center justify-between gap-4 rounded-[20px] border border-border bg-surface p-4">
-        <span className="flex flex-col gap-0.5">
-          <span className="text-sm font-semibold text-text">Wind down reminder</span>
-          <span className="text-xs text-muted">Tonight at {shiftClock(lightsOut, -WIND_DOWN_MINUTES)}</span>
+        <span className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-tint text-accent">
+            <Bell size={18} aria-hidden />
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="text-[15px] font-semibold text-text">Wind down reminder</span>
+            <span className="text-sm text-muted">Tonight at {shiftClock(lightsOut, -WIND_DOWN_MINUTES)}</span>
+          </span>
         </span>
         <input
           type="checkbox"
@@ -202,14 +207,14 @@ export function TonightTab({ state, active, night, onActiveChange, onRemind, onT
         <span
           aria-hidden
           className={[
-            'relative h-7 w-12 shrink-0 rounded-full transition-colors duration-150 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent',
-            active.reminderOn ? 'bg-accent' : 'bg-border',
+            'relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors duration-150 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent',
+            active.reminderOn ? 'bg-cta' : 'bg-border',
           ].join(' ')}
         >
           <span
             className={[
-              'absolute top-1 h-5 w-5 rounded-full bg-surface transition-transform duration-150 motion-reduce:transition-none',
-              active.reminderOn ? 'translate-x-6' : 'translate-x-1',
+              'absolute top-[2px] h-[27px] w-[27px] rounded-full bg-white shadow-sm transition-transform duration-150 motion-reduce:transition-none',
+              active.reminderOn ? 'translate-x-[22px]' : 'translate-x-[2px]',
             ].join(' ')}
           />
         </span>

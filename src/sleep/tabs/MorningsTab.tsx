@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Chip } from '../../components/Chip'
+import { Check } from 'lucide-react'
 import { HintCard } from '../../components/HintCard'
 import { PrimaryButton } from '../../components/PrimaryButton'
 import { addDays, daysBetween, fromKey, parseClock, weekdayName } from '../../lib/dates'
@@ -39,15 +39,19 @@ function TimeField({ label, value, edited, onChange }: { label: string; value: s
   return (
     <label
       className={[
-        'relative flex flex-col gap-1 rounded-[16px] border bg-surface p-3 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent',
-        edited ? 'border-[1.5px] border-accent' : 'border-border',
+        'relative flex h-14 items-center justify-between gap-3 rounded-[16px] bg-surface px-4 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent',
+        edited ? 'border-[1.5px] border-accent' : 'border border-border',
       ].join(' ')}
     >
-      <span className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium text-muted">{label}</span>
-        {edited && <span className="rounded-full bg-tint px-1.5 py-0.5 text-[10px] font-bold tracking-[1px] text-accent-text">EDITED</span>}
+      <span className="text-[15px] font-semibold text-text">{label}</span>
+      <span className="flex items-center gap-2">
+        {edited && (
+          <span className="flex h-[22px] items-center rounded-full bg-tint px-2 text-[11px] font-semibold tracking-[0.5px] text-accent-text uppercase">
+            Edited
+          </span>
+        )}
+        <span className="text-xl font-semibold text-text tabular-nums">{value}</span>
       </span>
-      <span className="text-[22px] leading-tight font-bold text-text tabular-nums">{value}</span>
       {/* The native input covers the field, so a tap opens the phone's own time wheel. */}
       <input
         type="time"
@@ -87,7 +91,7 @@ function CheckInForm({ active, today, morning, initial, onSave }: { active: Slee
   const inBed = formatDuration(checkInMinutes({ lightsOut, wake }))
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <TabIntro
         eyebrow={`${weekdayName(today)} · ${morning === 1 ? 'your first morning' : `morning ${morning}`}`}
         title="How did you sleep?"
@@ -96,10 +100,8 @@ function CheckInForm({ active, today, morning, initial, onSave }: { active: Slee
 
       <section className="flex flex-col gap-3 rounded-[20px] border border-border bg-surface p-4">
         <Eyebrow>Last night</Eyebrow>
-        <div className="grid grid-cols-2 gap-3">
-          <TimeField label="Lights out" value={lightsOut} edited={loEdited} onChange={setLightsOut} />
-          <TimeField label="Woke up" value={wake} edited={wakeEdited} onChange={setWake} />
-        </div>
+        <TimeField label="Lights out" value={lightsOut} edited={loEdited} onChange={setLightsOut} />
+        <TimeField label="Woke up" value={wake} edited={wakeEdited} onChange={setWake} />
         <p className="text-sm text-muted">
           {loEdited || wakeEdited
             ? `${inBed} in bed · ${shift === 0 ? 'as planned' : `${Math.abs(shift)} minutes ${shift > 0 ? 'later' : 'earlier'} than planned`}`
@@ -107,10 +109,10 @@ function CheckInForm({ active, today, morning, initial, onSave }: { active: Slee
         </p>
       </section>
 
-      <section className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between gap-3">
+      <section className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between gap-3">
           <Eyebrow>How rested do you feel?</Eyebrow>
-          <span className="text-xs text-muted">Required</span>
+          <span className="text-sm text-muted">Required</span>
         </div>
         <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-label="How rested do you feel?">
           {RESTED.map((label, i) => {
@@ -124,42 +126,52 @@ function CheckInForm({ active, today, morning, initial, onSave }: { active: Slee
                 aria-checked={selected}
                 onClick={() => setRested(value)}
                 className={[
-                  'flex min-h-16 flex-col items-center justify-center gap-0.5 rounded-[14px] border transition-transform duration-[120ms] motion-safe:active:scale-[0.96]',
+                  'flex h-16 min-w-0 flex-col items-center justify-center gap-0.5 rounded-[16px] transition-transform duration-[120ms] motion-safe:active:scale-[0.96]',
                   focusRing,
-                  selected ? 'border-accent bg-accent text-on-accent' : 'border-border bg-surface text-text',
+                  selected ? 'border-[1.5px] border-accent bg-tint' : 'border border-border bg-surface',
                 ].join(' ')}
               >
-                <span className="text-lg font-bold">{value}</span>
-                <span className={['text-[11px]', selected ? '' : 'text-muted'].join(' ')}>{label}</span>
+                <span className="text-xl font-bold text-text">{value}</span>
+                <span className="text-[10px] font-semibold text-muted">{label}</span>
               </button>
             )
           })}
         </div>
       </section>
 
-      <section className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between gap-3">
+      <section className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between gap-3">
           <Eyebrow>Anything about last night?</Eyebrow>
-          <span className="text-xs text-muted">{tags.length ? `${tags.length} picked` : 'Optional'}</span>
+          <span className="text-sm text-muted">{tags.length ? `${tags.length} picked` : 'Optional'}</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {TAGS.map((tag) => (
-            <Chip
-              key={tag}
-              variant="soft"
-              label={tag}
-              selected={tags.includes(tag)}
-              onClick={() => setTags((list) => (list.includes(tag) ? list.filter((t) => t !== tag) : [...list, tag]))}
-            />
-          ))}
+          {TAGS.map((tag) => {
+            const on = tags.includes(tag)
+            return (
+              <button
+                key={tag}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setTags((list) => (on ? list.filter((t) => t !== tag) : [...list, tag]))}
+                className={[
+                  'flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-text transition-transform duration-[120ms] motion-safe:active:scale-[0.97]',
+                  focusRing,
+                  on ? 'border-[1.5px] border-accent bg-tint' : 'border border-border bg-surface',
+                ].join(' ')}
+              >
+                {on && <Check size={14} strokeWidth={2.5} className="text-accent-text" aria-hidden />}
+                {tag}
+              </button>
+            )
+          })}
         </div>
       </section>
 
-      <div className="flex flex-col items-center gap-2 pt-1">
+      <div className="flex flex-col items-center gap-2">
         <PrimaryButton disabled={rested === null} onClick={() => rested && onSave({ lightsOut, wake, rested, tags, source: 'checkin' })}>
           Save this morning
         </PrimaryButton>
-        {rested === null && <p className="text-sm text-muted">Pick how rested you feel to save.</p>}
+        {rested === null && <p className="text-[13px] text-muted">Pick how rested you feel to save.</p>}
       </div>
     </div>
   )
@@ -181,9 +193,9 @@ export function MorningsTab({ active, today, onSave }: MorningsTabProps) {
 
   const mornings =
     total === 0 ? (
-      <section className="flex flex-col gap-1 rounded-[20px] border border-dashed border-border p-4">
-        <p className="text-base font-semibold text-text">Your mornings show up here</p>
-        <p className="text-sm text-muted">Each check in adds a line. After 7 mornings your patterns unlock.</p>
+      <section className="flex flex-col gap-2.5 rounded-[20px] border-[1.5px] border-dashed border-border-strong p-[18px]">
+        <p className="text-[15px] font-semibold text-text">Your mornings show up here</p>
+        <p className="text-sm leading-normal text-muted">Each check in adds a line. After 7 mornings your patterns unlock.</p>
       </section>
     ) : (
       <section className="flex flex-col gap-1 rounded-[20px] border border-border bg-surface p-4">
@@ -236,7 +248,7 @@ export function MorningsTab({ active, today, onSave }: MorningsTabProps) {
 
   if (!logged || editing) {
     return (
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         <CheckInForm
           active={active}
           today={today}

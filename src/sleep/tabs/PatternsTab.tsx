@@ -20,7 +20,24 @@ type PatternsTabProps = {
   today: string
   night: string
   skincareLive: boolean
+  healthConnected: boolean
   onOpenSkincare: () => void
+}
+
+const LOCKED = [
+  { title: 'Your week in sleep', body: 'Time asleep against your goal, night by night.' },
+  { title: 'What helps you', body: 'Which habits add minutes and which ones cost you, from your tags and sessions.' },
+  { title: 'Sleep and skin', body: 'How your nights show up in your Skincare routine and glow score.', skincare: true },
+]
+
+// When the 7th check in should land, if every morning from here on is logged.
+function unlockLabel(active: SleepActive, today: string, left: number) {
+  const canLogToday = !active.checkIns[today] && active.startedAt < today
+  const days = canLogToday ? left - 1 : left
+  const day = weekdayName(addDays(today, days))
+  if (days <= 0) return 'Unlocks today'
+  if (days === 1) return 'Unlocks tomorrow'
+  return days >= 6 ? `Unlocks next ${day}` : `Unlocks ${day}`
 }
 
 // The chart's top is 10 hours.
@@ -32,33 +49,41 @@ function Eyebrow({ children }: { children: string }) {
   return <p className="text-[11px] font-semibold tracking-[1.5px] text-muted uppercase">{children}</p>
 }
 
+// Up to three plan weeks from the current one, then the goal.
 function PlanCard({ active, night }: { active: SleepActive; night: string }) {
   const total = planWeeks(active)
   const week = Math.min(planWeekFor(nightNumber(active, night)), total)
-  const start = Math.max(1, week - 3)
+  const weeks: number[] = []
+  for (let w = week; w <= total && weeks.length < 3 && lightsOutFor(active, w) !== active.goal; w++) weeks.push(w)
+  const boxes = [
+    ...weeks.map((w) => ({ label: `Week ${w}`, time: lightsOutFor(active, w), current: w === week })),
+    { label: 'Goal', time: active.goal, current: weeks.length === 0 },
+  ]
   return (
     <section className="flex flex-col gap-3 rounded-[20px] border border-border bg-surface p-4">
-      <Eyebrow>Your plan</Eyebrow>
-      <div className="grid grid-cols-4 gap-2">
-        {[0, 1, 2, 3].map((i) => {
-          const w = start + i
-          const current = w === week
-          return (
-            <div
-              key={w}
-              className={[
-                'flex flex-col items-center gap-0.5 rounded-[12px] py-2',
-                current ? 'border-[1.5px] border-accent bg-tint' : 'border border-border',
-                w > total ? 'opacity-50' : '',
-              ].join(' ')}
-            >
-              <span className="text-[11px] text-muted">Week {w}</span>
-              <span className="text-sm font-semibold text-text tabular-nums">{lightsOutFor(active, w)}</span>
-            </div>
-          )
-        })}
+      <div className="flex items-center justify-between gap-3">
+        <Eyebrow>Your plan</Eyebrow>
+        <span className="text-sm text-muted">
+          Week {week} of {total}
+        </span>
       </div>
-      <p className="text-sm text-text">Lights out moves 15 minutes earlier each week. If a week goes badly, we hold it instead of pushing on.</p>
+      <div className="flex gap-2">
+        {boxes.map((box) => (
+          <div
+            key={box.label}
+            className={[
+              'flex min-w-0 flex-1 flex-col gap-1 rounded-[14px] p-2.5',
+              box.current ? 'border-[1.5px] border-accent bg-tint' : 'border border-border bg-surface',
+            ].join(' ')}
+          >
+            <span className="text-[11px] font-semibold text-muted">{box.label}</span>
+            <span className="text-[15px] font-bold text-text tabular-nums">{box.time}</span>
+          </div>
+        ))}
+      </div>
+      <p className="text-sm leading-normal text-muted">
+        Lights out moves 15 minutes earlier each {weekdayName(active.startedAt)}. If a week goes badly, we hold it instead of pushing on.
+      </p>
     </section>
   )
 }
@@ -81,44 +106,50 @@ function FactorList({ title, items, tone }: { title: string; items: Factor[]; to
   )
 }
 
-export function PatternsTab({ active, today, night, skincareLive, onOpenSkincare }: PatternsTabProps) {
+export function PatternsTab({ active, today, night, skincareLive, healthConnected, onOpenSkincare }: PatternsTabProps) {
   const logged = Object.keys(active.checkIns).length
 
   if (logged < PATTERN_NIGHTS) {
     const left = PATTERN_NIGHTS - logged
-    const locked = ['Your week in sleep', 'What helps you', ...(skincareLive ? ['Sleep and skin'] : [])]
     return (
       <div className="flex flex-col gap-4">
-        <TabIntro title="Your patterns are on the way" subtitle="Seven nights is what it takes to tell a pattern from a coincidence." />
+        <TabIntro
+          eyebrow="Patterns"
+          title="Your patterns are on the way"
+          subtitle="Seven nights is what it takes to tell a pattern from a coincidence."
+        />
 
-        <section className="flex flex-col gap-3 rounded-[20px] border-[1.5px] border-accent bg-tint p-5">
-          <Eyebrow>Nights logged</Eyebrow>
-          <div className="flex items-baseline justify-between gap-3">
-            <p className="text-[44px] leading-none font-bold text-text">
-              {logged} of {PATTERN_NIGHTS}
-            </p>
-            <p className="text-sm text-muted">
-              Unlocks in {left} {left === 1 ? 'morning' : 'mornings'}
-            </p>
+        <section className="flex flex-col gap-3.5 rounded-[20px] border-[1.5px] border-accent bg-tint p-5">
+          <div className="flex items-end justify-between gap-3">
+            <div className="flex flex-col gap-2">
+              <Eyebrow>Nights logged</Eyebrow>
+              <p className="text-[28px] leading-none font-bold tracking-[-0.5px] text-text">
+                {logged} of {PATTERN_NIGHTS}
+              </p>
+            </div>
+            <p className="text-sm text-muted">{unlockLabel(active, today, left)}</p>
           </div>
           <SegmentBar total={PATTERN_NIGHTS} filled={logged} label="Nights logged" />
-          <p className="text-sm text-text">Each morning check in counts.</p>
+          <p className="text-sm leading-normal text-text">
+            Each morning check in counts.{healthConnected ? '' : ' Apple Health fills the gaps if you connect it.'}
+          </p>
         </section>
 
         <PlanCard active={active} night={night} />
 
-        <section className="flex flex-col gap-2">
-          <Eyebrow>Coming with your first week</Eyebrow>
-          {locked.map((title) => (
-            <div key={title} className="flex items-center justify-between gap-3 rounded-[16px] border border-dashed border-border p-4">
-              <span className="text-base font-semibold text-muted">{title}</span>
-              <span className="flex items-center gap-1.5 text-xs text-muted">
-                <Lock size={13} aria-hidden />
+        <Eyebrow>Coming with your first week</Eyebrow>
+        {LOCKED.filter((card) => !card.skincare || skincareLive).map((card) => (
+          <section key={card.title} className="flex flex-col gap-2.5 rounded-[20px] border-[1.5px] border-dashed border-border-strong p-[18px]">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[15px] font-semibold text-text">{card.title}</p>
+              <span className="flex shrink-0 items-center gap-1.5 text-[13px] font-semibold text-muted">
+                <Lock size={14} aria-hidden />
                 {left} {left === 1 ? 'night' : 'nights'}
               </span>
             </div>
-          ))}
-        </section>
+            <p className="text-sm leading-normal text-muted">{card.body}</p>
+          </section>
+        ))}
       </div>
     )
   }

@@ -11,6 +11,10 @@ export type SleepSession = {
   blurb: string
   group: SessionGroup
   minutes?: number
+  // What the library shows on the right when it isn't "{minutes} min".
+  lengthLabel?: string
+  // Off the library list; offered only when it fits the night (Legs up the wall after late training).
+  situational?: boolean
   pattern?: BreathPhase[]
   steps?: { text: string; seconds: number }[]
 }
@@ -76,6 +80,7 @@ export const SESSIONS: SleepSession[] = [
     blurb: 'A 5 minute reset after training',
     group: 'Body',
     minutes: 5,
+    situational: true,
     steps: [
       'Sit sideways against a wall, then swing your legs up as you lie back.',
       'Let your arms rest open, palms up. Breathe slowly into your belly.',
@@ -83,8 +88,8 @@ export const SESSIONS: SleepSession[] = [
       'Bend your knees, roll to one side and rest there before you sit up.',
     ].map((text) => ({ text, seconds: 75 })),
   },
-  { id: 'rain', title: 'Rain on leaves', blurb: 'Soft, steady rain', group: 'Sound' },
-  { id: 'brownNoise', title: 'Brown noise', blurb: 'A deep, even hum', group: 'Sound' },
+  { id: 'rain', title: 'Rain on leaves', blurb: 'Fades out by itself', group: 'Sound', lengthLabel: '30 min' },
+  { id: 'brownNoise', title: 'Brown noise', blurb: 'Covers street noise', group: 'Sound', lengthLabel: 'All night' },
 ]
 
 export const sessionById = (id: string) => SESSIONS.find((s) => s.id === id)
