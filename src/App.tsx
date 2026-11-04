@@ -28,6 +28,9 @@ import { MirrorStep } from './sleep/setup/MirrorStep'
 import { createSleepActive, defaultSleepTab, nextAt, nightKeyFor, retime, sleepReminders, tonightLightsOut } from './sleep/plan'
 import type { SleepTip } from './sleep/rules'
 import { SleepModule } from './screens/SleepModule'
+import { AnchorStep as HydrationAnchorStep } from './hydration/setup/AnchorStep'
+import { InventoryStep as HydrationInventoryStep } from './hydration/setup/InventoryStep'
+import { HealthStep as HydrationHealthStep } from './hydration/setup/HealthStep'
 import { SleepSessionPlayer } from './screens/SleepSessionPlayer'
 import { sessionById } from './sleep/sessions'
 import { simulateSleep } from './sleep/demo'
@@ -61,6 +64,7 @@ import {
   type SleepActive,
   type SleepCheckIn,
   type SleepSetup,
+  type HydrationSetup,
   type UiState,
 } from './state/appState'
 
@@ -159,6 +163,9 @@ function App() {
 
   const updateSkincare = (patch: Partial<SkincareSetup>) =>
     setState((current) => ({ ...current, skincare: { ...current.skincare, ...patch } }))
+
+  const updateHydration = (patch: Partial<HydrationSetup>) =>
+    setState((current) => ({ ...current, hydration: { ...current.hydration, ...patch } }))
 
   const updateSleep = (patch: Partial<SleepSetup>) =>
     setState((current) => ({ ...current, sleep: { ...current.sleep, ...patch } }))
@@ -349,6 +356,18 @@ function App() {
     go('dashboard')
     setFreshModuleId('skincare')
     setToastPending(true)
+  }
+
+  // Apple Health is a step only for people who already track.
+  function hydrationStep(offset: 1 | -1) {
+    const flow: RouteName[] = [
+      'hydration/anchor',
+      'hydration/inventory',
+      ...(state.hydration.anchor === 'track' ? (['hydration/health'] as RouteName[]) : []),
+      'hydration/target',
+      'hydration/mirror',
+    ]
+    go(flow[flow.indexOf(route.name) + offset] ?? 'dashboard', offset)
   }
 
   function sleepStep(offset: 1 | -1) {
@@ -663,10 +682,21 @@ function App() {
           />
         ) : null
       // Hydration screens are built next; until then each one is a placeholder.
-      case 'hydration':
       case 'hydration/anchor':
+        return <HydrationAnchorStep setup={state.hydration} onChange={updateHydration} onNext={() => hydrationStep(1)} onBack={() => hydrationStep(-1)} />
       case 'hydration/inventory':
+        return <HydrationInventoryStep setup={state.hydration} onChange={updateHydration} onNext={() => hydrationStep(1)} onBack={() => hydrationStep(-1)} />
       case 'hydration/health':
+        return (
+          <HydrationHealthStep
+            setup={state.hydration}
+            outcome={state.demo.healthConnect}
+            onChange={updateHydration}
+            onNext={() => hydrationStep(1)}
+            onBack={() => hydrationStep(-1)}
+          />
+        )
+      case 'hydration':
       case 'hydration/target':
       case 'hydration/mirror':
       case 'hydration/situation':
