@@ -31,6 +31,11 @@ import { SleepModule } from './screens/SleepModule'
 import { AnchorStep as HydrationAnchorStep } from './hydration/setup/AnchorStep'
 import { InventoryStep as HydrationInventoryStep } from './hydration/setup/InventoryStep'
 import { HealthStep as HydrationHealthStep } from './hydration/setup/HealthStep'
+import { TargetStep as HydrationTargetStep } from './hydration/setup/TargetStep'
+import { MirrorStep as HydrationMirrorStep } from './hydration/setup/MirrorStep'
+import { createHydrationActive } from './hydration/mirror'
+import { hydrationDay, DEFAULT_WAKE } from './hydration/day'
+import { quietAfter } from './hydration/nudges'
 import { SleepSessionPlayer } from './screens/SleepSessionPlayer'
 import { sessionById } from './sleep/sessions'
 import { simulateSleep } from './sleep/demo'
@@ -370,6 +375,23 @@ function App() {
     go(flow[flow.indexOf(route.name) + offset] ?? 'dashboard', offset)
   }
 
+  function completeHydration(reminders: Reminder[], reminderOn: boolean) {
+    setState((current) => {
+      const hydration = { ...current.hydration, completedAt: current.hydration.completedAt ?? new Date().toISOString() }
+      const ids = new Set(reminders.map((r) => r.id))
+      return {
+        ...current,
+        modulesSetUp: [...current.modulesSetUp.filter((id) => id !== 'hydration'), 'hydration'],
+        hydration,
+        hydrationActive: createHydrationActive(hydration, reminderOn, new Date(), { wake: current.sleepActive?.wake ?? DEFAULT_WAKE }),
+        ui: { ...current.ui, reminders: [...current.ui.reminders.filter((r) => !ids.has(r.id)), ...reminders] },
+      }
+    })
+    go('dashboard')
+    setFreshModuleId('hydration')
+    setToastPending(true)
+  }
+
   function sleepStep(offset: 1 | -1) {
     if (editingSleepTimes) {
       setEditingSleepTimes(false)
@@ -696,9 +718,28 @@ function App() {
             onBack={() => hydrationStep(-1)}
           />
         )
-      case 'hydration':
       case 'hydration/target':
+        return (
+          <HydrationTargetStep
+            setup={state.hydration}
+            answers={state.onboarding}
+            onChange={updateHydration}
+            onNext={() => hydrationStep(1)}
+            onBack={() => hydrationStep(-1)}
+          />
+        )
       case 'hydration/mirror':
+        return (
+          <HydrationMirrorStep
+            setup={state.hydration}
+            wake={state.sleepActive?.wake ?? DEFAULT_WAKE}
+            quiet={quietAfter(state.sleepActive, hydrationDay())}
+            importedDays={state.hydration.health === 'connected' ? 26 : 0}
+            onBack={() => hydrationStep(-1)}
+            onDone={completeHydration}
+          />
+        )
+      case 'hydration':
       case 'hydration/situation':
       case 'hydration/card':
       case 'hydration/saved':
