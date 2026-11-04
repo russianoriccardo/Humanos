@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
-import { Bell, ChevronRight } from 'lucide-react'
+import { Bell, Check, ChevronRight, Plus } from 'lucide-react'
 import { Screen } from '../components/Screen'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Avatar } from '../components/Avatar'
@@ -9,7 +9,10 @@ import { ModuleCard, type ModuleRowTone } from '../components/ModuleCard'
 import { BottomNav } from '../components/BottomNav'
 import { Toast } from '../components/Toast'
 import { DemoPanel } from '../components/DemoPanel'
-import { addDays } from '../lib/dates'
+import { addDays, dateKey } from '../lib/dates'
+import { useHydrationToday } from '../hydration/useHydrationToday'
+import { WATER } from '../hydration/drinks'
+import { formatLitres } from '../hydration/target'
 import { MODULE_ICONS, moduleName, orderedModules } from '../lib/modules'
 import {
   todayKey,
@@ -17,6 +20,8 @@ import {
   type DemoState,
   type SkincareActive,
   type SleepActive,
+  type HydrationActive,
+  type Drink,
   type SleepTab,
 } from '../state/appState'
 import { useToday } from '../skincare/useToday'
@@ -37,6 +42,8 @@ type DashboardProps = {
   onToastDone: () => void
   onActiveChange: (fn: (active: SkincareActive) => SkincareActive) => void
   onSleepActiveChange: (fn: (active: SleepActive) => SleepActive) => void
+  onHydrationActiveChange: (fn: (active: HydrationActive) => HydrationActive) => void
+  onLogDrink: (drink: Drink, ml: number) => void
   onDemoChange: (patch: Partial<DemoState>) => void
   onJumpCycle: () => void
   onSimulate: () => void
@@ -72,13 +79,15 @@ type SquareProps = {
   highlight?: boolean
   value: string
   valueSize?: 'big' | 'small'
-  caption: string
+  caption: ReactNode
+  // Replaces the chevron (e.g. "Target reached").
+  badge?: ReactNode
   extra?: ReactNode
   onOpen: () => void
 }
 
 // A live module. The whole card opens the module; `extra` may hold its own button, raised above the card's.
-function ModuleSquare({ name, icon: Icon, isNew, wide, highlight = false, value, valueSize = 'big', caption, extra, onOpen }: SquareProps) {
+function ModuleSquare({ name, icon: Icon, isNew, wide, highlight = false, value, valueSize = 'big', caption, badge, extra, onOpen }: SquareProps) {
   return (
     <div
       className={[
@@ -95,6 +104,8 @@ function ModuleSquare({ name, icon: Icon, isNew, wide, highlight = false, value,
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text">{name}</span>
         {isNew ? (
           <span className="shrink-0 rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold tracking-[1px] text-on-accent">NEW</span>
+        ) : badge ? (
+          badge
         ) : (
           <ChevronRight size={18} className="shrink-0 text-muted" aria-hidden />
         )}
@@ -126,6 +137,8 @@ export function Dashboard({
   onToastDone,
   onActiveChange,
   onSleepActiveChange,
+  onHydrationActiveChange,
+  onLogDrink,
   onDemoChange,
   onJumpCycle,
   onSimulate,
@@ -136,6 +149,7 @@ export function Dashboard({
 }: DashboardProps) {
   const [demoOpen, setDemoOpen] = useState(false)
   const { plan, usableWeather, health } = useToday(state)
+  const water = useHydrationToday(state)
   const active = state.skincareActive
   const sleepActive = state.sleepActive
   const live = variant !== 'day0'
@@ -147,8 +161,16 @@ export function Dashboard({
   const today = todayKey()
   const evening = new Date().getHours() >= EVENING_HOUR
 
-  // Live = set up and holding its data; Skincare and Sleep are the only modules that can be.
-  const startedOn = (id: string) => (id === 'skincare' ? active?.startedAt : id === 'sleep' ? sleepActive?.startedAt : undefined)
+  // Live = set up and holding its data. Hydration counts from its setup day (day 1 may be tomorrow).
+  const hydrationSetUpOn = state.hydration.completedAt ? dateKey(new Date(state.hydration.completedAt)) : state.hydrationActive?.startedAt
+  const startedOn = (id: string) =>
+    id === 'skincare'
+      ? active?.startedAt
+      : id === 'sleep'
+        ? sleepActive?.startedAt
+        : id === 'hydration' && state.hydrationActive
+          ? hydrationSetUpOn
+          : undefined
   const liveModules = live ? state.modulesSetUp.filter((id) => !!startedOn(id)) : []
   const pending = modules.filter((id) => !liveModules.includes(id))
   const nextModule = pending[0]
@@ -161,7 +183,9 @@ export function Dashboard({
 
   const skincareCoach = liveModules.includes('skincare') && !!active && !active.seenCoachMark
   const sleepCoach = !skincareCoach && liveModules.includes('sleep') && !!sleepActive && !sleepActive.seenCoachMark
-  const coachFor = skincareCoach ? 'skincare' : sleepCoach ? 'sleep' : null
+  const hydrationCoach =
+    !skincareCoach && !sleepCoach && liveModules.includes('hydration') && !!state.hydrationActive && !state.hydrationActive.seenCoachMark
+  const coachFor = skincareCoach ? 'skincare' : sleepCoach ? 'sleep' : hydrationCoach ? 'hydration' : null
 
   // Any touch dismisses the coach mark, without a full-screen layer that would swallow scrolls and taps.
   useEffect(() => {
@@ -169,10 +193,76 @@ export function Dashboard({
     const dismiss = () =>
       coachFor === 'skincare'
         ? onActiveChange((a) => ({ ...a, seenCoachMark: true }))
-        : onSleepActiveChange((a) => ({ ...a, seenCoachMark: true }))
+        : coachFor === 'sleep'
+          ? onSleepActiveChange((a) => ({ ...a, seenCoachMark: true }))
+          : onHydrationActiveChange((a) => ({ ...a, seenCoachMark: true }))
     document.addEventListener('pointerdown', dismiss, { once: true })
     return () => document.removeEventListener('pointerdown', dismiss)
-  }, [coachFor, onActiveChange, onSleepActiveChange])
+  }, [coachFor, onActiveChange, onSleepActiveChange, onHydrationActiveChange])
+
+  function hydrationSquare(wide: boolean) {
+    if (!water) return null
+    const { active: h, total, target, pace, isDay1 } = water
+    const reached = pace === 'done' || pace === 'limitReached'
+    const quick = h.drinks[0] ?? WATER
+    const word =
+      pace === 'behind'
+        ? 'Behind pace'
+        : pace === 'done'
+          ? 'Target reached'
+          : pace === 'start'
+            ? isDay1
+              ? 'Day 1'
+              : 'Not started'
+            : 'On pace'
+    const caption = h.doctorLimit ? (
+      `${formatLitres(Math.max(0, target - total))} left · your doctor's limit`
+    ) : (
+      <>
+        of {formatLitres(target)} · <span className={pace === 'behind' ? 'text-warning' : 'text-accent-text'}>{word}</span>
+      </>
+    )
+    return (
+      <ModuleSquare
+        name="Hydration"
+        icon={MODULE_ICONS.hydration}
+        isNew={fresh === 'hydration'}
+        wide={wide}
+        onOpen={() => onOpenModule('hydration')}
+        value={formatLitres(total)}
+        caption={caption}
+        badge={
+          pace === 'done' ? (
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent text-on-accent" aria-label="Target reached">
+              <Check size={14} strokeWidth={3} aria-hidden />
+            </span>
+          ) : undefined
+        }
+        extra={
+          <span className="flex items-center gap-2">
+            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-tint" aria-hidden>
+              <span
+                className={['block h-full rounded-full', h.doctorLimit && reached ? 'bg-warning' : 'bg-accent'].join(' ')}
+                style={{ width: `${Math.min(100, (total / target) * 100)}%` }}
+              />
+            </span>
+            {!(h.doctorLimit && reached) && (
+              <button
+                type="button"
+                onClick={() => onLogDrink(quick, quick.ml)}
+                aria-label={`Log ${quick.name}, ${quick.ml} ml`}
+                className={`pointer-events-auto relative z-10 -my-2 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${focusRing}`}
+              >
+                <span className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-cta text-cta-text">
+                  <Plus size={16} strokeWidth={2.5} aria-hidden />
+                </span>
+              </button>
+            )}
+          </span>
+        }
+      />
+    )
+  }
 
   function day0Row(index: number): { subtitle: string; tone: ModuleRowTone } {
     if (index === 0) return { subtitle: 'Recommended first · 2 min', tone: 'recommended' }
@@ -379,12 +469,19 @@ export function Dashboard({
               <div className="grid grid-cols-2 gap-3">
                 {liveModules.map((id, index) => (
                   <div key={id} className={isWide(index) ? 'col-span-2' : undefined}>
-                    {id === 'skincare' ? skincareSquare(isWide(index)) : sleepSquare(isWide(index))}
+                    {id === 'skincare' ? skincareSquare(isWide(index)) : id === 'sleep' ? sleepSquare(isWide(index)) : hydrationSquare(isWide(index))}
                   </div>
                 ))}
               </div>
               {coachFor === 'skincare' && (
                 <CoachMark title="Your skincare hub is live" body="Tap to open today's tips, face yoga and your progress." right={coachRight} />
+              )}
+              {coachFor === 'hydration' && (
+                <CoachMark
+                  title="Log without opening Hydration"
+                  body="Tap + to add a glass of water. Open the card for everything else."
+                  right={coachRight}
+                />
               )}
               {coachFor === 'sleep' && (
                 <CoachMark title="Your sleep hub is live" body="Tap it for tonight's plan and your wind down." right={coachRight} />

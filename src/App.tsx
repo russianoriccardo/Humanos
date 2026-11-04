@@ -36,6 +36,7 @@ import { MirrorStep as HydrationMirrorStep } from './hydration/setup/MirrorStep'
 import { createHydrationActive } from './hydration/mirror'
 import { hydrationDay, DEFAULT_WAKE } from './hydration/day'
 import { quietAfter } from './hydration/nudges'
+import { UndoToast } from './components/UndoToast'
 import { SleepSessionPlayer } from './screens/SleepSessionPlayer'
 import { sessionById } from './sleep/sessions'
 import { simulateSleep } from './sleep/demo'
@@ -70,6 +71,9 @@ import {
   type SleepCheckIn,
   type SleepSetup,
   type HydrationSetup,
+  type HydrationActive,
+  type Drink,
+  type DrinkLog,
   type UiState,
 } from './state/appState'
 
@@ -129,6 +133,8 @@ function App() {
   // "Edit sleep times" reruns the bedtime step and comes back to Sleep.
   const [editingSleepTimes, setEditingSleepTimes] = useState(false)
   const [sleepSessionId, setSleepSessionId] = useState<string | null>(null)
+  // The last log or delete, with how to take it back.
+  const [undo, setUndo] = useState<{ key: number; message: string; revert: () => void } | null>(null)
   const [moduleToast, setModuleToast] = useState<string | null>(null)
   const [alert, setAlert] = useState<Alert | null>(null)
   const [resetCount, setResetCount] = useState(0)
@@ -171,6 +177,33 @@ function App() {
 
   const updateHydration = (patch: Partial<HydrationSetup>) =>
     setState((current) => ({ ...current, hydration: { ...current.hydration, ...patch } }))
+
+  const updateHydrationActive = (fn: (active: HydrationActive) => HydrationActive) =>
+    setState((current) => (current.hydrationActive ? { ...current, hydrationActive: fn(current.hydrationActive) } : current))
+
+  const offerUndo = (message: string, revert: () => void) => setUndo({ key: Date.now(), message, revert })
+
+  // Logs live under their hydration day (04:00 to 04:00).
+  const withoutLog = (logs: Record<string, DrinkLog[]>, id: string) =>
+    Object.fromEntries(Object.entries(logs).map(([day, list]) => [day, list.filter((l) => l.id !== id)]))
+  const withLog = (logs: Record<string, DrinkLog[]>, entry: DrinkLog) => {
+    const day = hydrationDay(new Date(entry.at))
+    return { ...logs, [day]: [...(logs[day] ?? []), entry] }
+  }
+
+  function logDrink(drink: Drink, ml: number, at?: Date) {
+    const entry: DrinkLog = {
+      id: `${Date.now()}`,
+      at: (at ?? new Date()).toISOString(),
+      drinkId: drink.id,
+      name: drink.name,
+      ml,
+      counts: drink.counts,
+    }
+    updateHydrationActive((a) => ({ ...a, logs: withLog(a.logs, entry) }))
+    navigator.vibrate?.(8)
+    offerUndo(`${drink.name} · ${ml} ml logged`, () => updateHydrationActive((a) => ({ ...a, logs: withoutLog(a.logs, entry.id) })))
+  }
 
   const updateSleep = (patch: Partial<SleepSetup>) =>
     setState((current) => ({ ...current, sleep: { ...current.sleep, ...patch } }))
@@ -585,6 +618,8 @@ function App() {
             onToastDone={() => setToastPending(false)}
             onActiveChange={updateActive}
             onSleepActiveChange={updateSleepActive}
+            onHydrationActiveChange={updateHydrationActive}
+            onLogDrink={logDrink}
             onDemoChange={updateDemo}
             onJumpCycle={jumpScanCycle}
             onSimulate={simulateNineDays}
@@ -778,6 +813,17 @@ function App() {
           >
             {screen}
           </StepTransition>
+          {undo && (
+            <UndoToast
+              key={undo.key}
+              message={undo.message}
+              onUndo={() => {
+                undo.revert()
+                setUndo(null)
+              }}
+              onDone={() => setUndo(null)}
+            />
+          )}
           {alert && (
             <Toast
               key={alert.message + alert.detail}
