@@ -15,7 +15,8 @@ export type HealthSnapshot = {
 // What the engine needs from the weather service: today's values in local time.
 export type WeatherSnapshot = {
   current: { humidity: number; temperature: number; uv: number }
-  hourly: { hour: number; uv: number; humidity: number }[]
+  // temperature: °C, filled by the weather service (Hydration's hot day check); optional for fixtures.
+  hourly: { hour: number; uv: number; humidity: number; temperature?: number }[]
   uvMax: number
 }
 

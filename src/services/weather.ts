@@ -8,7 +8,8 @@ const CACHE_KEY = 'humanos.weather'
 
 export type Place = { label: string; source: 'gps' | 'city'; lat: number; lon: number }
 
-export type WeatherData = WeatherSnapshot & { date: string; fetchedAt: number; place: Place }
+// tempMax: today's highest hourly temperature in °C (Hydration's hot day adjustment).
+export type WeatherData = WeatherSnapshot & { date: string; fetchedAt: number; place: Place; tempMax: number }
 
 export function cityPlace(name: string): Place {
   const city = CITIES.find((c) => c.name === name) ?? config.fallbackCity
@@ -17,10 +18,16 @@ export function cityPlace(name: string): Place {
 
 type OpenMeteoResponse = {
   current?: { relative_humidity_2m?: number; temperature_2m?: number; uv_index?: number }
-  hourly?: { time?: string[]; uv_index?: (number | null)[]; relative_humidity_2m?: (number | null)[] }
+  hourly?: {
+    time?: string[]
+    uv_index?: (number | null)[]
+    relative_humidity_2m?: (number | null)[]
+    temperature_2m?: (number | null)[]
+  }
 }
 
 const round1 = (n: number) => Math.round(n * 10) / 10
+const current0 = (json: OpenMeteoResponse) => json.current?.temperature_2m ?? 0
 
 // forecast_days=1 + timezone=auto returns exactly "today" in the location's own time zone,
 // which may differ from the device's (e.g. the Milan fallback used from New York).
@@ -30,6 +37,7 @@ export function parseForecast(json: OpenMeteoResponse, place: Place, now = new D
     hour: Number(time.slice(11, 13)),
     uv: round1(json.hourly?.uv_index?.[i] ?? 0),
     humidity: Math.round(json.hourly?.relative_humidity_2m?.[i] ?? 0),
+    temperature: round1(json.hourly?.temperature_2m?.[i] ?? current0(json)),
   }))
 
   const current = json.current ?? {}
@@ -46,6 +54,9 @@ export function parseForecast(json: OpenMeteoResponse, place: Place, now = new D
     },
     hourly,
     uvMax: round1(Math.max(...hourly.map((h) => h.uv))),
+    tempMax: json.hourly?.temperature_2m?.some((t) => t !== null && t !== undefined)
+      ? Math.round(Math.max(...hourly.map((h) => h.temperature)))
+      : Math.round(current.temperature_2m ?? 0),
   }
 }
 
@@ -86,7 +97,7 @@ export async function loadWeather(place: Place, signal?: AbortSignal): Promise<W
     latitude: String(place.lat),
     longitude: String(place.lon),
     current: 'relative_humidity_2m,temperature_2m,uv_index',
-    hourly: 'uv_index,relative_humidity_2m',
+    hourly: 'uv_index,relative_humidity_2m,temperature_2m',
     forecast_days: '1',
     timezone: 'auto',
   })

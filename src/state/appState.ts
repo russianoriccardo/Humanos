@@ -66,6 +66,44 @@ export type SleepActive = {
   seenCoachMark: boolean
 }
 
+export type HydrationAnchor = 'track' | 'roughly' | 'notAtAll'
+export type Drink = {
+  id: string                 // 'water' | 'coffee' | 'tea' | 'sparkling' | 'juice' | 'sports' | 'custom:<slug>' | 'guide:<cardId>'
+  name: string
+  ml: 50 | 100 | 150 | 200 | 250 | 300 | 330 | 400 | 500 | number
+  counts: boolean            // false = alcohol: logged, never counted toward the target
+  sweet: boolean             // juice, sports drink
+  source: 'builtin' | 'custom' | 'guide'
+}
+export type HydrationSetup = {
+  anchor: HydrationAnchor | null          // null = skipped, behaves as 'roughly'
+  drinks: string[]                        // picked ids, [] = skipped
+  customDrinks: Drink[]                   // max 3 during setup
+  targetMl: number | null
+  targetSource: 'recommended' | 'adjusted' | 'default' | 'doctor' | null
+  doctorLimit: boolean
+  health: 'notNow' | 'connected' | 'denied' | 'noData' | null   // only asked when anchor = 'track'
+  healthAvgMl: number | null              // average of imported days, null without Apple Health
+  completedAt?: string
+}
+export type DrinkLog = { id: string; at: string; drinkId: string; name: string; ml: number; counts: boolean }
+export type HydrationActive = {
+  startedAt: string                       // day 1 key; TOMORROW when set up after the last nudge slot
+  targetMl: number
+  doctorLimit: boolean
+  drinks: Drink[]                         // the quick log row, ordered, max 8
+  logs: Record<string, DrinkLog[]>        // key = hydration day (starts at 04:00, see hydrationDay)
+  imported: Record<string, number>        // Apple Health daily totals in ml; {} for everyone without it
+  slots: { time: string; on: boolean }[]  // max 3
+  reminderOn: boolean
+  heat: 'unasked' | 'on' | 'off'
+  notToday: string[]                      // day keys where adjustments were removed
+  fired: { id: string; at: string }[]     // nudges actually shown, last 14 days
+  asked: { drop: string[]; fewerAt?: string; welcomeBackFor?: string }
+  pausedUntil?: string
+  seenCoachMark: boolean
+}
+
 export type Reminder = { id: string; at: string; title: string; body: string }
 
 export type SleepTab = 'tonight' | 'winddown' | 'mornings' | 'patterns'
@@ -74,6 +112,10 @@ export type UiState = {
   skincareTab: 'today' | 'yoga' | 'progress' | 'ask'
   // Set when something opens Sleep on a specific tab (e.g. the dashboard's "Log in 10 sec").
   sleepTab: SleepTab | null
+  hydrationTab: 'today' | 'guide'
+  // The Guide situation or card currently open (hydration/situation, hydration/card).
+  hydrationSituation: string | null
+  hydrationCard: string | null
   locationChoice: 'unset' | 'gps' | 'city'
   city: string
   reminders: Reminder[]
@@ -86,6 +128,9 @@ export type DemoState = {
   scenario: HealthScenario
   healthConnect: HealthConnectDemo
   outdoorWindow: { start: string; end: string }
+  // Hydration: a fake afternoon max in °C (null = real weather), and today's workout from "Apple Health".
+  heatOverride: number | null
+  workoutMinutes: 0 | 45 | 90
 }
 
 export type AppState = {
@@ -96,6 +141,10 @@ export type AppState = {
   skincareActive: SkincareActive | null
   sleep: SleepSetup
   sleepActive: SleepActive | null
+  hydration: HydrationSetup
+  hydrationActive: HydrationActive | null
+  // Guide bookmarks, kept outside hydrationActive so they survive a module reset.
+  hydrationSaved: string[]
   // Daily UV peak / humidity low, recorded whenever weather loads. Feeds "SPF on sunny days".
   weatherLog: Record<string, { uvMax: number; rhMin: number }>
   demo: DemoState
@@ -119,11 +168,16 @@ export const initialDemo: DemoState = {
   scenario: 'none',
   healthConnect: 'unavailable',
   outdoorWindow: { start: '12:30', end: '13:30' },
+  heatOverride: null,
+  workoutMinutes: 0,
 }
 
 const initialUi: UiState = {
   skincareTab: 'today',
   sleepTab: null,
+  hydrationTab: 'today',
+  hydrationSituation: null,
+  hydrationCard: null,
   locationChoice: 'unset',
   city: config.fallbackCity.name,
   reminders: [],
@@ -137,6 +191,17 @@ export const initialSleep: SleepSetup = {
   health: null,
 }
 
+export const initialHydration: HydrationSetup = {
+  anchor: null,
+  drinks: [],
+  customDrinks: [],
+  targetMl: null,
+  targetSource: null,
+  doctorLimit: false,
+  health: null,
+  healthAvgMl: null,
+}
+
 export const initialAppState: AppState = {
   onboarding: initialAnswers,
   onboardingDone: false,
@@ -145,6 +210,9 @@ export const initialAppState: AppState = {
   skincareActive: null,
   sleep: initialSleep,
   sleepActive: null,
+  hydration: initialHydration,
+  hydrationActive: null,
+  hydrationSaved: [],
   weatherLog: {},
   demo: initialDemo,
   ui: initialUi,
@@ -152,7 +220,7 @@ export const initialAppState: AppState = {
 
 type LegacyUi = { coachMarkSeen?: boolean; tonight?: { date: string; done: string[] } }
 
-const REMINDER_MODULES = ['skincare', 'sleep']
+const REMINDER_MODULES = ['skincare', 'sleep', 'hydration']
 
 // `createActive` is injected to keep this module free of the reading/routine logic.
 
@@ -169,11 +237,17 @@ export function loadAppState(createActive: (setup: SkincareSetup) => SkincareAct
         skincareActive: parsed.skincareActive ?? null,
         sleep: { ...initialSleep, ...parsed.sleep },
         sleepActive: parsed.sleepActive ?? null,
+        hydration: { ...initialHydration, ...parsed.hydration },
+        hydrationActive: parsed.hydrationActive ?? null,
+        hydrationSaved: parsed.hydrationSaved ?? [],
         weatherLog: parsed.weatherLog ?? {},
         demo: { ...initialDemo, ...parsed.demo },
         ui: {
           skincareTab: parsed.ui?.skincareTab ?? initialUi.skincareTab,
           sleepTab: parsed.ui?.sleepTab ?? initialUi.sleepTab,
+          hydrationTab: parsed.ui?.hydrationTab ?? initialUi.hydrationTab,
+          hydrationSituation: parsed.ui?.hydrationSituation ?? initialUi.hydrationSituation,
+          hydrationCard: parsed.ui?.hydrationCard ?? initialUi.hydrationCard,
           locationChoice: parsed.ui?.locationChoice ?? initialUi.locationChoice,
           city: parsed.ui?.city ?? initialUi.city,
           // Ids from before module prefixes were all skincare.

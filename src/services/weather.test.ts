@@ -10,6 +10,7 @@ const response = {
     time: Array.from({ length: 24 }, (_, h) => `2026-10-10T${String(h).padStart(2, '0')}:00`),
     uv_index: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4, 1.15, 2.05, 2.6, 2.0, 1.6, 1.65, 2.1, 1.45, 0.7, 0.1, 0, 0, 0, 0],
     relative_humidity_2m: [95, 96, 96, 99, 100, 100, 100, 100, 100, 100, 100, 85, 82, 78, 76, 79, 74, 73, 75, 80, 87, 89, 90, 91],
+    temperature_2m: [13.1, 12.8, 12.5, 12.2, 12, 11.9, 12, 12.6, 14, 15.8, 17.4, 18.9, 20.1, 21, 21.6, 21.8, 21.2, 20, 18.6, 17.2, 16.1, 15.3, 14.6, 14],
   },
 }
 
@@ -19,8 +20,16 @@ describe('parseForecast', () => {
     expect(data.date).toBe('2026-10-10')
     expect(data.current).toEqual({ humidity: 73, temperature: 20, uv: 1.6 })
     expect(data.hourly).toHaveLength(24)
-    expect(data.hourly[12]).toEqual({ hour: 12, uv: 2.6, humidity: 82 })
+    expect(data.hourly[12]).toEqual({ hour: 12, uv: 2.6, humidity: 82, temperature: 20.1 })
     expect(data.uvMax).toBe(2.6)
+    expect(data.tempMax).toBe(22)
+  })
+
+  it('falls back to the current temperature when hourly temperatures are missing', () => {
+    const { temperature_2m: _drop, ...hourly } = response.hourly
+    void _drop
+    const data = parseForecast({ ...response, hourly }, milan, new Date(2026, 9, 10, 16, 30))
+    expect(data.tempMax).toBe(20)
   })
 
   it("uses the location's date, not the device's (fallback city from another time zone)", () => {

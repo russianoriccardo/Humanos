@@ -83,6 +83,16 @@ type RouteName =
   | 'sleep/health'
   | 'sleep/mirror'
   | 'sleep/session'
+  | 'hydration'
+  | 'hydration/anchor'
+  | 'hydration/inventory'
+  | 'hydration/health'
+  | 'hydration/target'
+  | 'hydration/mirror'
+  | 'hydration/situation'
+  | 'hydration/card'
+  | 'hydration/saved'
+  | 'hydration/drinks'
 
 type Route = { name: RouteName; moduleId?: string }
 
@@ -543,14 +553,17 @@ function App() {
                 ? go('module/home', 1, moduleId)
                 : moduleId === 'skincare'
                   ? go('skincare/routine')
-                  : go('sleep/anchor')
+                  : moduleId === 'sleep'
+                    ? go('sleep/anchor')
+                    : go('hydration/anchor')
             }
             onOpenModule={(moduleId, sleepTab) => {
               if (moduleId === 'skincare') go('skincare')
               else if (moduleId === 'sleep') {
                 updateUi({ sleepTab: sleepTab ?? defaultSleepTab(state.sleepActive) })
                 go('sleep')
-              } else go('module/home', 1, moduleId)
+              } else if (moduleId === 'hydration') go('hydration')
+              else go('module/home', 1, moduleId)
             }}
             onReset={resetDemo}
           />
@@ -649,6 +662,18 @@ function App() {
             onOpenSkincare={() => go('skincare')}
           />
         ) : null
+      // Hydration screens are built next; until then each one is a placeholder.
+      case 'hydration':
+      case 'hydration/anchor':
+      case 'hydration/inventory':
+      case 'hydration/health':
+      case 'hydration/target':
+      case 'hydration/mirror':
+      case 'hydration/situation':
+      case 'hydration/card':
+      case 'hydration/saved':
+      case 'hydration/drinks':
+        return <ComingNext moduleId="hydration" onBack={() => go('dashboard', -1)} />
       case 'sleep/session': {
         const session = sleepSessionId ? sessionById(sleepSessionId) : undefined
         return session ? (

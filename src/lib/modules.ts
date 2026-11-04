@@ -76,7 +76,7 @@ export function moduleName(id: string) {
 }
 
 // Modules with a real setup flow. Starting any other module opens ComingNext.
-export const SETUP_READY = ['skincare', 'sleep']
+export const SETUP_READY = ['skincare', 'sleep', 'hydration']
 
 // Dashboard order: live modules first, in the order they were set up, then the rest in onboarding order.
 // Falls back to Skincare alone if onboarding's module step was skipped.
