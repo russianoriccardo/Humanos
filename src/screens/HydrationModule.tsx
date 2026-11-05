@@ -36,6 +36,8 @@ type HydrationModuleProps = {
   onActiveChange: (fn: (active: HydrationActive) => HydrationActive) => void
   onToggleReminder: (on: boolean) => void
   onReset: () => void
+  onToggleSaved: (cardId: string) => void
+  onReadCard: (cardId: string) => void
 }
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
@@ -53,6 +55,8 @@ export function HydrationModule({
   onActiveChange,
   onToggleReminder,
   onReset,
+  onToggleSaved,
+  onReadCard,
 }: HydrationModuleProps) {
   const today = useHydrationToday(state)
   const weather = useWeather()
@@ -255,6 +259,8 @@ export function HydrationModule({
             onActiveChange={onActiveChange}
             onToggleReminder={onToggleReminder}
             onOpenSheet={setSheet}
+            onToggleSaved={onToggleSaved}
+            onReadCard={onReadCard}
           />
         ) : (
           <div className="flex flex-col items-center gap-2 py-16 text-center">

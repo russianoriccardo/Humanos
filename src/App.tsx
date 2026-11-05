@@ -244,6 +244,21 @@ function App() {
     go('dashboard', -1)
   }
 
+  // Guide bookmarks live outside hydrationActive, so they survive a module reset.
+  function toggleSaved(cardId: string) {
+    const saved = state.hydrationSaved.includes(cardId)
+    setState((current) => ({
+      ...current,
+      hydrationSaved: saved ? current.hydrationSaved.filter((id) => id !== cardId) : [...current.hydrationSaved, cardId],
+    }))
+    setModuleToast(saved ? 'Removed from Saved' : 'Saved')
+  }
+
+  function readCard(cardId: string) {
+    updateUi({ hydrationCard: cardId })
+    go('hydration/card')
+  }
+
   async function toggleHydrationReminder(on: boolean) {
     updateHydrationActive((a) => ({ ...a, reminderOn: on, pausedUntil: on ? undefined : a.pausedUntil }))
     if (on) await requestPermission()
@@ -881,13 +896,15 @@ function App() {
             onActiveChange={updateHydrationActive}
             onToggleReminder={toggleHydrationReminder}
             onReset={resetHydrationModule}
+            onToggleSaved={toggleSaved}
+            onReadCard={readCard}
           />
         ) : null
       case 'hydration/situation':
       case 'hydration/card':
       case 'hydration/saved':
       case 'hydration/drinks':
-        return <ComingNext moduleId="hydration" onBack={() => go('dashboard', -1)} />
+        return <ComingNext moduleId="hydration" onBack={() => go('hydration', -1)} />
       case 'sleep/session': {
         const session = sleepSessionId ? sessionById(sleepSessionId) : undefined
         return session ? (

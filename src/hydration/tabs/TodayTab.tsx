@@ -11,6 +11,9 @@ import type { HydrationToday } from '../useHydrationToday'
 import { weekSummary } from '../week'
 import type { HydrationSheet } from './sheets'
 import { SwipeRow } from './SwipeRow'
+import { forYouToday } from '../guide.content'
+import { WATER } from '../drinks'
+import { BookmarkButton, CardTile } from './GuideBits'
 
 type TodayTabProps = {
   state: AppState
@@ -20,6 +23,8 @@ type TodayTabProps = {
   onActiveChange: (fn: (active: HydrationActive) => HydrationActive) => void
   onToggleReminder: (on: boolean) => void
   onOpenSheet: (sheet: HydrationSheet) => void
+  onToggleSaved: (cardId: string) => void
+  onReadCard: (cardId: string) => void
 }
 
 const HOLD_MS = 500
@@ -100,7 +105,17 @@ function QuickChip({ drink, onTap, onHold }: { drink: Drink; onTap: () => void; 
   )
 }
 
-export function TodayTab({ state, today, onLog, onDelete, onActiveChange, onToggleReminder, onOpenSheet }: TodayTabProps) {
+export function TodayTab({
+  state,
+  today,
+  onLog,
+  onDelete,
+  onActiveChange,
+  onToggleReminder,
+  onOpenSheet,
+  onToggleSaved,
+  onReadCard,
+}: TodayTabProps) {
   const weather = useWeather()
   const [showAll, setShowAll] = useState(false)
   const [askedLocation, setAskedLocation] = useState(false)
@@ -130,6 +145,20 @@ export function TodayTab({ state, today, onLog, onDelete, onActiveChange, onTogg
   const shown = logs.length > COLLAPSE_OVER && !showAll ? logs.slice(0, SHOW_RECENT) : logs
   const week = weekSummary(active, day)
   const weekMax = week ? Math.max(target, ...week.days.map((d) => d.ml)) * 1.1 : 1
+
+  const checkIns = state.sleepActive ? Object.entries(state.sleepActive.checkIns).sort(([a], [b]) => b.localeCompare(a)) : []
+  const forYou = forYouToday({
+    now,
+    doctor,
+    hot: adj.heatMl > 0,
+    workoutMinutes: state.hydration.health === 'connected' ? state.demo.workoutMinutes : 0,
+    lastRested: checkIns[0]?.[1].rested ?? null,
+    coffeesToday: logs.filter((l) => l.drinkId === 'coffee').length,
+    behind: pace === 'behind',
+    isDay1,
+    hasCoffee: active.drinks.some((d) => d.id === 'coffee'),
+    dayNumber: daysBetween(active.startedAt, day),
+  })
 
   const lastSlot = active.slots.filter((s) => s.on).map((s) => s.time).sort().pop()
   const remindersSub = doctor
@@ -329,7 +358,41 @@ export function TodayTab({ state, today, onLog, onDelete, onActiveChange, onTogg
         </div>
       </section>
 
-      {/* "For you today" from the Guide fills this slot in a later step. */}
+      {forYou && (
+        <section className="flex flex-col gap-3 rounded-[20px] border border-border bg-surface p-4">
+          <div className="flex items-start gap-3">
+            <CardTile card={forYou.card} />
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <Eyebrow>{now.getHours() >= 19 ? 'For you tonight' : 'For you today'}</Eyebrow>
+              <p className="text-[15px] font-semibold text-text">{forYou.card.title}</p>
+            </div>
+            <BookmarkButton
+              saved={state.hydrationSaved.includes(forYou.card.id)}
+              title={forYou.card.title}
+              onToggle={() => onToggleSaved(forYou.card.id)}
+            />
+          </div>
+          <p className="text-sm leading-normal text-text">{forYou.card.why}</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => onReadCard(forYou.card.id)}
+              className={`h-10 rounded-full border border-border bg-surface px-4 text-sm font-semibold text-text ${focusRing}`}
+            >
+              Read
+            </button>
+            {forYou.action === 'logWater' && (
+              <button
+                type="button"
+                onClick={() => onLog(WATER, 250)}
+                className={`h-10 rounded-full bg-cta px-4 text-sm font-semibold text-cta-text ${focusRing}`}
+              >
+                Log a glass
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
       {logs.length === 0 ? (
         <section className="flex flex-col gap-1.5 rounded-[20px] border-[1.5px] border-dashed border-border-strong p-[18px]">
