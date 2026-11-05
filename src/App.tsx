@@ -39,6 +39,9 @@ import { quietAfter } from './hydration/nudges'
 import { UndoToast } from './components/UndoToast'
 import { HydrationModule } from './screens/HydrationModule'
 import { WeatherTemp } from './hydration/WeatherTemp'
+import { CardScreen, SavedScreen, SituationScreen } from './hydration/guide/GuideScreens'
+import { guideDrink } from './hydration/forYou'
+import type { GuideCard } from './hydration/guide.content'
 import { hydrationToday } from './hydration/today'
 import { WATER } from './hydration/drinks'
 import { hydrationReminders as buildHydrationReminders, mergeWithCheckIn, shouldFire, weeklyRecap } from './hydration/nudges'
@@ -140,6 +143,8 @@ function App() {
   const [editingSleepTimes, setEditingSleepTimes] = useState(false)
   const [sleepSessionId, setSleepSessionId] = useState<string | null>(null)
   // The last log or delete, with how to take it back.
+  // Where a Guide card was opened from, so Back returns there.
+  const [cardBack, setCardBack] = useState<RouteName>('hydration')
   const [undo, setUndo] = useState<{ key: number; message: string; revert: () => void } | null>(null)
   const [moduleToast, setModuleToast] = useState<string | null>(null)
   const [alert, setAlert] = useState<Alert | null>(null)
@@ -255,8 +260,26 @@ function App() {
   }
 
   function readCard(cardId: string) {
+    if (route.name !== 'hydration/card') setCardBack(route.name)
     updateUi({ hydrationCard: cardId })
     go('hydration/card')
+  }
+
+  function removeSaved(cardId: string) {
+    setState((current) => ({ ...current, hydrationSaved: current.hydrationSaved.filter((id) => id !== cardId) }))
+    offerUndo('Removed from Saved', () =>
+      setState((current) => ({ ...current, hydrationSaved: [...current.hydrationSaved.filter((id) => id !== cardId), cardId] })),
+    )
+  }
+
+  // A Guide drink joins the quick log (or swaps one out when it's full).
+  function addGuideDrink(card: GuideCard, replaceId?: string) {
+    const drink = guideDrink(card)
+    if (!drink || !state.hydrationActive) return
+    const before = state.hydrationActive.drinks
+    const next = replaceId ? before.map((d) => (d.id === replaceId ? drink : d)) : [...before, drink]
+    updateHydrationActive((a) => ({ ...a, drinks: next }))
+    offerUndo(`${drink.name} added to Today`, () => updateHydrationActive((a) => ({ ...a, drinks: before })))
   }
 
   async function toggleHydrationReminder(on: boolean) {
@@ -898,11 +921,59 @@ function App() {
             onReset={resetHydrationModule}
             onToggleSaved={toggleSaved}
             onReadCard={readCard}
+            onOpenSituation={(hydrationSituation) => {
+              updateUi({ hydrationSituation })
+              go('hydration/situation')
+            }}
+            onOpenSaved={() => go('hydration/saved')}
+            onAddDrink={addGuideDrink}
           />
         ) : null
       case 'hydration/situation':
+        return state.hydrationActive && state.ui.hydrationSituation ? (
+          <SituationScreen
+            situationId={state.ui.hydrationSituation}
+            active={state.hydrationActive}
+            saved={state.hydrationSaved}
+            toast={moduleToast}
+            onToastDone={() => setModuleToast(null)}
+            onBack={() => go('hydration', -1)}
+            onToggleSaved={toggleSaved}
+            onReadCard={readCard}
+          />
+        ) : null
       case 'hydration/card':
+        return state.hydrationActive && state.ui.hydrationCard ? (
+          <CardScreen
+            key={state.ui.hydrationCard}
+            cardId={state.ui.hydrationCard}
+            active={state.hydrationActive}
+            saved={state.hydrationSaved}
+            toast={moduleToast}
+            onToastDone={() => setModuleToast(null)}
+            onBack={() => go(cardBack, -1)}
+            onToggleSaved={toggleSaved}
+            onReadCard={readCard}
+            onAddDrink={addGuideDrink}
+          />
+        ) : null
       case 'hydration/saved':
+        return state.hydrationActive ? (
+          <SavedScreen
+            active={state.hydrationActive}
+            saved={state.hydrationSaved}
+            toast={moduleToast}
+            onToastDone={() => setModuleToast(null)}
+            onBack={() => go('hydration', -1)}
+            onToggleSaved={toggleSaved}
+            onReadCard={readCard}
+            onRemove={removeSaved}
+            onBrowse={() => {
+              updateUi({ hydrationTab: 'guide' })
+              go('hydration', -1)
+            }}
+          />
+        ) : null
       case 'hydration/drinks':
         return <ComingNext moduleId="hydration" onBack={() => go('hydration', -1)} />
       case 'sleep/session': {

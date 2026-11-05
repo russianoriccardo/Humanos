@@ -11,7 +11,7 @@ import type { HydrationToday } from '../useHydrationToday'
 import { weekSummary } from '../week'
 import type { HydrationSheet } from './sheets'
 import { SwipeRow } from './SwipeRow'
-import { forYouToday } from '../guide.content'
+import { forYouNow } from '../forYou'
 import { WATER } from '../drinks'
 import { BookmarkButton, CardTile } from './GuideBits'
 
@@ -146,19 +146,7 @@ export function TodayTab({
   const week = weekSummary(active, day)
   const weekMax = week ? Math.max(target, ...week.days.map((d) => d.ml)) * 1.1 : 1
 
-  const checkIns = state.sleepActive ? Object.entries(state.sleepActive.checkIns).sort(([a], [b]) => b.localeCompare(a)) : []
-  const forYou = forYouToday({
-    now,
-    doctor,
-    hot: adj.heatMl > 0,
-    workoutMinutes: state.hydration.health === 'connected' ? state.demo.workoutMinutes : 0,
-    lastRested: checkIns[0]?.[1].rested ?? null,
-    coffeesToday: logs.filter((l) => l.drinkId === 'coffee').length,
-    behind: pace === 'behind',
-    isDay1,
-    hasCoffee: active.drinks.some((d) => d.id === 'coffee'),
-    dayNumber: daysBetween(active.startedAt, day),
-  })
+  const forYou = forYouNow(state, today)
 
   const lastSlot = active.slots.filter((s) => s.on).map((s) => s.time).sort().pop()
   const remindersSub = doctor

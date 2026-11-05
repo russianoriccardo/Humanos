@@ -14,6 +14,10 @@ import { formatLitres } from '../hydration/target'
 import { LogSheet } from '../hydration/tabs/LogSheet'
 import type { HydrationSheet } from '../hydration/tabs/sheets'
 import { TodayTab } from '../hydration/tabs/TodayTab'
+import { GuideTab } from '../hydration/tabs/GuideTab'
+import { SwapSheet } from '../hydration/tabs/GuideBits'
+import { cardById, type GuideCard } from '../hydration/guide.content'
+import { QUICK_LOG_MAX } from '../hydration/drinks'
 import { useHydrationToday } from '../hydration/useHydrationToday'
 
 type TabId = UiState['hydrationTab']
@@ -38,6 +42,9 @@ type HydrationModuleProps = {
   onReset: () => void
   onToggleSaved: (cardId: string) => void
   onReadCard: (cardId: string) => void
+  onOpenSituation: (situationId: string) => void
+  onOpenSaved: () => void
+  onAddDrink: (card: GuideCard, replaceId?: string) => void
 }
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
@@ -57,6 +64,9 @@ export function HydrationModule({
   onReset,
   onToggleSaved,
   onReadCard,
+  onOpenSituation,
+  onOpenSaved,
+  onAddDrink,
 }: HydrationModuleProps) {
   const today = useHydrationToday(state)
   const weather = useWeather()
@@ -204,6 +214,19 @@ export function HydrationModule({
         </Sheet>
       )}
 
+      {sheet?.kind === 'swap' && cardById(sheet.cardId)?.drink && (
+        <SwapSheet
+          drinks={active.drinks}
+          name={cardById(sheet.cardId)!.drink!.name}
+          onClose={close}
+          onSwap={(id) => {
+            const card = cardById(sheet.cardId)!
+            close()
+            onAddDrink(card, id)
+          }}
+        />
+      )}
+
       {/* The menu and the reminders sheet are filled in with the Guide step. */}
       {sheet?.kind === 'menu' && (
         <Sheet title="Hydration" onClose={close}>
@@ -263,10 +286,15 @@ export function HydrationModule({
             onReadCard={onReadCard}
           />
         ) : (
-          <div className="flex flex-col items-center gap-2 py-16 text-center">
-            <p className="text-base font-semibold text-text">Coming next</p>
-            <p className="text-sm text-muted">The Guide is on its way.</p>
-          </div>
+          <GuideTab
+            state={state}
+            today={today}
+            onToggleSaved={onToggleSaved}
+            onReadCard={onReadCard}
+            onOpenSituation={onOpenSituation}
+            onOpenSaved={onOpenSaved}
+            onAddDrink={(card) => (active.drinks.length >= QUICK_LOG_MAX ? setSheet({ kind: 'swap', cardId: card.id }) : onAddDrink(card))}
+          />
         )}
       </div>
     </Screen>

@@ -7,4 +7,5 @@ export type HydrationSheet =
   | { kind: 'menu' }
   | { kind: 'reminders' }
   | { kind: 'reset' }
+  | { kind: 'swap'; cardId: string }
   | null
