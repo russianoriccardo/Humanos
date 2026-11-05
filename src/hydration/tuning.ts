@@ -5,6 +5,8 @@ import { expectedBy } from './day'
 import { GLASS_ML } from './target'
 
 const DROP_DAYS = 5
+// Reminders paused by "Welcome back" stay paused until turned on again.
+export const PAUSED_AWAY = '9999-12-31'
 
 const atOn = (day: string, time: string) => {
   const d = fromKey(day)

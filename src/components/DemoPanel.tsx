@@ -27,6 +27,13 @@ const HEALTH_CONNECT: { id: HealthConnectDemo; label: string }[] = [
   { id: 'noData', label: 'No data' },
 ]
 
+const HEAT: { value: number | null; label: string }[] = [
+  { value: null, label: 'Off' },
+  { value: 29, label: '29°C' },
+  { value: 33, label: '33°C' },
+]
+const WORKOUT: DemoState['workoutMinutes'][] = [0, 45, 90]
+
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
 
 function Label({ children }: { children: string }) {
@@ -102,6 +109,34 @@ export function DemoPanel({
                 />
               ))}
             </div>
+          </section>
+
+          <section className="flex flex-col gap-2">
+            <Label>Hot day</Label>
+            <div className="flex flex-wrap gap-2">
+              {HEAT.map((option) => (
+                <Chip
+                  key={option.label}
+                  variant="soft"
+                  label={option.label}
+                  selected={demo.heatOverride === option.value}
+                  onClick={() => onChange({ heatOverride: option.value })}
+                />
+              ))}
+            </div>
+            <Label>Workout today</Label>
+            <div className="flex flex-wrap gap-2">
+              {WORKOUT.map((minutes) => (
+                <Chip
+                  key={minutes}
+                  variant="soft"
+                  label={`${minutes} min`}
+                  selected={demo.workoutMinutes === minutes}
+                  onClick={() => onChange({ workoutMinutes: minutes })}
+                />
+              ))}
+            </div>
+            <p className="text-sm text-muted">Workouts only count with Apple Health connected in Hydration setup.</p>
           </section>
 
           <section className="flex flex-col gap-2">

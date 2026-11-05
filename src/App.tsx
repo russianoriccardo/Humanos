@@ -37,6 +37,7 @@ import { createHydrationActive } from './hydration/mirror'
 import { hydrationDay, DEFAULT_WAKE } from './hydration/day'
 import { quietAfter } from './hydration/nudges'
 import { UndoToast } from './components/UndoToast'
+import { HydrationModule } from './screens/HydrationModule'
 import { SleepSessionPlayer } from './screens/SleepSessionPlayer'
 import { sessionById } from './sleep/sessions'
 import { simulateSleep } from './sleep/demo'
@@ -203,6 +204,26 @@ function App() {
     updateHydrationActive((a) => ({ ...a, logs: withLog(a.logs, entry) }))
     navigator.vibrate?.(8)
     offerUndo(`${drink.name} · ${ml} ml logged`, () => updateHydrationActive((a) => ({ ...a, logs: withoutLog(a.logs, entry.id) })))
+  }
+
+  function deleteLog(id: string) {
+    const entry = Object.values(state.hydrationActive?.logs ?? {}).flat().find((l) => l.id === id)
+    if (!entry) return
+    updateHydrationActive((a) => ({ ...a, logs: withoutLog(a.logs, id) }))
+    offerUndo(`${entry.name} removed`, () => updateHydrationActive((a) => ({ ...a, logs: withLog(a.logs, entry) })))
+  }
+
+  function editLog(id: string, patch: Partial<Pick<DrinkLog, 'at' | 'ml' | 'drinkId' | 'name' | 'counts'>>) {
+    updateHydrationActive((a) => {
+      const entry = Object.values(a.logs).flat().find((l) => l.id === id)
+      return entry ? { ...a, logs: withLog(withoutLog(a.logs, id), { ...entry, ...patch }) } : a
+    })
+  }
+
+  async function toggleHydrationReminder(on: boolean) {
+    updateHydrationActive((a) => ({ ...a, reminderOn: on, pausedUntil: on ? undefined : a.pausedUntil }))
+    if (on) await requestPermission()
+    else setReminders((list) => list.filter((r) => !/^hydration:(nudge|status):/.test(r.id)))
   }
 
   const updateSleep = (patch: Partial<SleepSetup>) =>
@@ -775,6 +796,21 @@ function App() {
           />
         )
       case 'hydration':
+        return state.hydrationActive ? (
+          <HydrationModule
+            state={state}
+            tab={state.ui.hydrationTab}
+            toast={moduleToast}
+            onToastDone={() => setModuleToast(null)}
+            onTabChange={(hydrationTab) => updateUi({ hydrationTab })}
+            onBack={() => go('dashboard', -1)}
+            onLog={logDrink}
+            onDelete={deleteLog}
+            onEdit={editLog}
+            onActiveChange={updateHydrationActive}
+            onToggleReminder={toggleHydrationReminder}
+          />
+        ) : null
       case 'hydration/situation':
       case 'hydration/card':
       case 'hydration/saved':
