@@ -204,7 +204,7 @@ export function Dashboard({
 
   function hydrationSquare(wide: boolean) {
     if (!water) return null
-    const { active: h, total, target, pace, isDay1 } = water
+    const { active: h, total, target, pace, isDay1, beforeDay1 } = water
     const reached = pace === 'done' || pace === 'limitReached'
     const quick = h.drinks[0] ?? WATER
     const word =
@@ -213,8 +213,10 @@ export function Dashboard({
         : pace === 'done'
           ? 'Target reached'
           : pace === 'start'
-            ? isDay1
-              ? 'Day 1'
+            ? beforeDay1
+              ? 'Starts tomorrow'
+              : isDay1
+                ? 'Day 1'
               : 'Not started'
             : 'On pace'
     const caption = h.doctorLimit ? (

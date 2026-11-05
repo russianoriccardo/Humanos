@@ -50,6 +50,12 @@ describe('paceStatus and paceLine', () => {
     expect(paceStatus({ ...base, doctor: true, total: 2000, now: at(13) })).toBe('limitReached')
   })
 
+  it('never judges the evening before day 1', () => {
+    expect(paceStatus({ ...base, total: 250, now: at(18), isDay1: true, beforeDay1: true })).toBe('start')
+    expect(paceStatus({ ...base, total: 2000, now: at(18), isDay1: true, beforeDay1: true })).toBe('done')
+    expect(paceLine('start', { ...base, total: 250, now: at(18), isDay1: true, beforeDay1: true })).toEqual({ a: 'Day 1 starts tomorrow.', b: 'No catching up tonight.' })
+  })
+
   it('never says behind in doctor mode', () => {
     expect(paceStatus({ ...base, doctor: true, total: 0, now: at(19) })).toBe('limitLeft')
   })

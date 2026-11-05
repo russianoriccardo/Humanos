@@ -163,7 +163,7 @@ export function TodayTab({
             ? `Next at ${next} · only if you're behind`
             : `${lastSlot ?? '20:00'} sent · quiet after ${quiet}`
 
-  const eyebrow = [weekdayName(day), isDay1 ? 'day 1' : clockOf(now), ...(adj.heatMl && today.tempMax !== null ? [`${today.tempMax}°C`] : [])].join(' · ')
+  const eyebrow = [weekdayName(day), isDay1 && !today.beforeDay1 ? 'day 1' : clockOf(now), ...(adj.heatMl && today.tempMax !== null ? [`${today.tempMax}°C`] : [])].join(' · ')
   const heroTone = doctor && reached ? 'border-[1.5px] border-warning bg-warning-tint' : reached ? 'border-[1.5px] border-accent bg-tint' : 'border border-border bg-surface'
   const dotTone = pace === 'behind' || (doctor && reached) ? 'bg-warning' : 'bg-accent'
 

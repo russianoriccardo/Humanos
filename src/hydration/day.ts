@@ -47,12 +47,14 @@ export function expectedBy(now: Date, target: number, wake = DEFAULT_WAKE) {
 
 export type PaceStatus = 'start' | 'ahead' | 'on' | 'behind' | 'done' | 'limitLeft' | 'limitReached'
 
-type PaceInput = { total: number; target: number; now: Date; wake?: string; doctor: boolean; isDay1: boolean }
+// beforeDay1: set up after the last slot, day 1 is tomorrow; tonight is never judged.
+type PaceInput = { total: number; target: number; now: Date; wake?: string; doctor: boolean; isDay1: boolean; beforeDay1?: boolean }
 
-export function paceStatus({ total, target, now, wake, doctor, isDay1 }: PaceInput): PaceStatus {
+export function paceStatus({ total, target, now, wake, doctor, isDay1, beforeDay1 }: PaceInput): PaceStatus {
   // A doctor's limit is a ceiling: never "behind", never a push to drink more.
   if (doctor) return total >= target ? 'limitReached' : 'limitLeft'
   if (total >= target) return 'done'
+  if (beforeDay1) return 'start'
   if (total === 0 && (isDay1 || (now.getHours() >= DAY_START_HOUR && now.getHours() < 10))) return 'start'
   const expected = expectedBy(now, target, wake)
   if (total < expected - GLASS_ML) return 'behind'
@@ -73,6 +75,7 @@ export function paceLine(status: PaceStatus, ctx: PaceInput): { a: string; b: st
   const { total, target, now, wake } = ctx
   switch (status) {
     case 'start':
+      if (ctx.beforeDay1) return { a: 'Day 1 starts tomorrow.', b: 'No catching up tonight.' }
       return ctx.isDay1
         ? { a: 'Day 1.', b: 'Your first glass starts it.' }
         : { a: 'Early in the day.', b: 'A glass with breakfast is a good start.' }

@@ -25,7 +25,8 @@ export function hydrationToday(state: AppState, now: Date, realTemp: number | nu
   const wake = state.sleepActive?.wake ?? DEFAULT_WAKE
   // Logs from before day 1 (set up after the last slot) still count as day 1.
   const isDay1 = day <= active.startedAt
-  const paceInput = { total, target, now, wake, doctor: active.doctorLimit, isDay1 }
+  const beforeDay1 = day < active.startedAt
+  const paceInput = { total, target, now, wake, doctor: active.doctorLimit, isDay1, beforeDay1 }
   const pace = paceStatus(paceInput)
   const quiet = quietAfter(state.sleepActive, day)
   const next = nextSlot(
@@ -45,6 +46,7 @@ export function hydrationToday(state: AppState, now: Date, realTemp: number | nu
     tempMax,
     wake,
     isDay1,
+    beforeDay1,
     pace,
     line: paceLine(pace, paceInput),
     expected: expectedBy(now, target, wake),
