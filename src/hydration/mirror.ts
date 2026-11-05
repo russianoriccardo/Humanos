@@ -156,14 +156,16 @@ export function createHydrationActive(setup: HydrationSetup, reminderOn: boolean
   const wake = ctx.wake ?? DEFAULT_WAKE
   const today = hydrationDay(now)
   const slots = defaultSlots(setup.anchor, wake, setup.doctorLimit)
-  const picked = pickedDrinks(setup)
+  // Built ins first, then own drinks; Water leads when nothing picked counts (e.g. only Beer).
+  const ordered = [...pickedDrinks(setup).filter((d) => d.source === 'builtin'), ...pickedDrinks(setup).filter((d) => d.source !== 'builtin')]
+  const picked = ordered.some((d) => d.counts) ? ordered : [WATER, ...ordered]
   // Set up after the last slot: day 1 is tomorrow, no catching up tonight.
   const startedAt = nextSlot(slots.map((time) => ({ time, on: true })), now) ? today : addDays(today, 1)
   return {
     startedAt,
     targetMl: setup.targetMl ?? DEFAULT_TARGET,
     doctorLimit: setup.doctorLimit,
-    drinks: (picked.length ? picked : [WATER]).slice(0, QUICK_LOG_MAX),
+    drinks: picked.slice(0, QUICK_LOG_MAX),
     logs: {},
     imported: setup.health === 'connected' ? importedHealth(today) : {},
     slots: slots.map((time) => ({ time, on: true })),

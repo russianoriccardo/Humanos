@@ -291,7 +291,8 @@ function App() {
 
   function changeDrinks(drinks: Drink[], removed?: Drink) {
     const before = state.hydrationActive?.drinks ?? []
-    updateHydrationActive((a) => ({ ...a, drinks }))
+    // Deleting or hiding the + drink clears the shortcut.
+    updateHydrationActive((a) => ({ ...a, drinks, shortcut: a.shortcut && drinks.some((d) => d.id === a.shortcut!.drinkId) ? a.shortcut : undefined }))
     if (removed) offerUndo(`${removed.name} removed`, () => updateHydrationActive((a) => ({ ...a, drinks: before })))
   }
 

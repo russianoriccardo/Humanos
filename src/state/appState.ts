@@ -101,6 +101,8 @@ export type HydrationActive = {
   fired: { id: string; at: string }[]     // nudges actually shown, last 14 days
   asked: { drop: string[]; fewerAt?: string; welcomeBackFor?: string }
   pausedUntil?: string
+  // What the dashboard + logs when pinned; otherwise it follows the last drink (see hydration/shortcut.ts).
+  shortcut?: { drinkId: string; ml: number; pinned: boolean }
   seenCoachMark: boolean
 }
 
