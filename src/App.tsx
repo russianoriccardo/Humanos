@@ -39,6 +39,9 @@ import { quietAfter } from './hydration/nudges'
 import { UndoToast } from './components/UndoToast'
 import { HydrationModule } from './screens/HydrationModule'
 import { WeatherTemp } from './hydration/WeatherTemp'
+import { MyDrinks } from './hydration/MyDrinks'
+import { DEMO_SAVED, importedHealth, simulateHydration } from './hydration/demo'
+import { defaultSlots } from './hydration/nudges'
 import { CardScreen, SavedScreen, SituationScreen } from './hydration/guide/GuideScreens'
 import { guideDrink } from './hydration/forYou'
 import type { GuideCard } from './hydration/guide.content'
@@ -145,6 +148,8 @@ function App() {
   // The last log or delete, with how to take it back.
   // Where a Guide card was opened from, so Back returns there.
   const [cardBack, setCardBack] = useState<RouteName>('hydration')
+  // From the Hydration menu: rerun one setup step alone, then come back. Back restores the old answers.
+  const [hydrationEdit, setHydrationEdit] = useState<{ step: 'target' | 'health'; before: HydrationSetup } | null>(null)
   const [undo, setUndo] = useState<{ key: number; message: string; revert: () => void } | null>(null)
   const [moduleToast, setModuleToast] = useState<string | null>(null)
   const [alert, setAlert] = useState<Alert | null>(null)
@@ -247,6 +252,62 @@ function App() {
       },
     }))
     go('dashboard', -1)
+  }
+
+  function editHydration(step: 'target' | 'health') {
+    if (!state.hydrationActive) return
+    const before = state.hydration
+    // The setup answers mirror the live module before the step reruns.
+    updateHydration({ targetMl: state.hydrationActive.targetMl, doctorLimit: state.hydrationActive.doctorLimit })
+    setHydrationEdit({ step, before })
+    go(step === 'target' ? 'hydration/target' : 'hydration/health')
+  }
+
+  function applyHydrationEdit(step: 'target' | 'health') {
+    setState((current) => {
+      const active = current.hydrationActive
+      const setup = current.hydration
+      if (!active) return current
+      if (step === 'health') {
+        return {
+          ...current,
+          hydrationActive: { ...active, imported: setup.health === 'connected' ? importedHealth(hydrationDay()) : {} },
+        }
+      }
+      const doctor = setup.doctorLimit
+      // A doctor's limit swaps the nudges for one daily status; logs always stay.
+      const slots =
+        doctor === active.doctorLimit
+          ? active.slots
+          : defaultSlots(setup.anchor, current.sleepActive?.wake ?? DEFAULT_WAKE, doctor).map((time) => ({ time, on: true }))
+      return {
+        ...current,
+        hydrationActive: { ...active, targetMl: setup.targetMl ?? active.targetMl, doctorLimit: doctor, slots },
+        ui: { ...current.ui, reminders: current.ui.reminders.filter((r) => !/^hydration:(nudge|status):/.test(r.id) || Date.parse(r.at) <= Date.now()) },
+      }
+    })
+    if (step === 'target') setModuleToast('Target updated')
+  }
+
+  function changeDrinks(drinks: Drink[], removed?: Drink) {
+    const before = state.hydrationActive?.drinks ?? []
+    updateHydrationActive((a) => ({ ...a, drinks }))
+    if (removed) offerUndo(`${removed.name} removed`, () => updateHydrationActive((a) => ({ ...a, drinks: before })))
+  }
+
+  // Demo panel: 12 days of logs, today's Figma entries, Guide saves and a hot day.
+  function simulateWaterDays() {
+    setState((current) =>
+      current.hydrationActive
+        ? {
+            ...current,
+            hydrationActive: simulateHydration(current.hydrationActive),
+            hydrationSaved: [...new Set([...current.hydrationSaved, ...DEMO_SAVED])],
+          }
+        : current,
+    )
+    setFreshModuleId(null)
+    setToastPending(false)
   }
 
   // Guide bookmarks live outside hydrationActive, so they survive a module reset.
@@ -528,6 +589,13 @@ function App() {
 
   // Apple Health is a step only for people who already track.
   function hydrationStep(offset: 1 | -1) {
+    if (hydrationEdit) {
+      if (offset === 1) applyHydrationEdit(hydrationEdit.step)
+      else setState((current) => ({ ...current, hydration: hydrationEdit.before }))
+      setHydrationEdit(null)
+      go('hydration', -1)
+      return
+    }
     const flow: RouteName[] = [
       'hydration/anchor',
       'hydration/inventory',
@@ -688,6 +756,7 @@ function App() {
     setEditingRoutine(false)
     setEditingSleepTimes(false)
     setSleepSessionId(null)
+    setHydrationEdit(null)
     setResetCount((count) => count + 1)
     go('onboarding', -1)
   }
@@ -754,6 +823,7 @@ function App() {
             onJumpCycle={jumpScanCycle}
             onSimulate={simulateNineDays}
             onSimulateSleep={simulateSleepNights}
+            onSimulateWater={simulateWaterDays}
             onStartModule={(moduleId) =>
               !SETUP_READY.includes(moduleId)
                 ? go('module/home', 1, moduleId)
@@ -927,6 +997,9 @@ function App() {
             }}
             onOpenSaved={() => go('hydration/saved')}
             onAddDrink={addGuideDrink}
+            onEditTarget={() => editHydration('target')}
+            onMyDrinks={() => go('hydration/drinks')}
+            onAppleHealth={() => editHydration('health')}
           />
         ) : null
       case 'hydration/situation':
@@ -975,7 +1048,9 @@ function App() {
           />
         ) : null
       case 'hydration/drinks':
-        return <ComingNext moduleId="hydration" onBack={() => go('hydration', -1)} />
+        return state.hydrationActive ? (
+          <MyDrinks active={state.hydrationActive} onBack={() => go('hydration', -1)} onDrinksChange={changeDrinks} />
+        ) : null
       case 'sleep/session': {
         const session = sleepSessionId ? sessionById(sleepSessionId) : undefined
         return session ? (

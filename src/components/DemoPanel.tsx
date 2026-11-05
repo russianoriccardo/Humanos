@@ -10,10 +10,12 @@ type DemoPanelProps = {
   demo: DemoState
   canJumpCycle: boolean
   canSimulateSleep: boolean
+  canSimulateWater: boolean
   onChange: (patch: Partial<DemoState>) => void
   onJumpCycle: () => void
   onSimulate: () => void
   onSimulateSleep: () => void
+  onSimulateWater: () => void
   onReset: () => void
   onClose: () => void
 }
@@ -44,10 +46,12 @@ export function DemoPanel({
   demo,
   canJumpCycle,
   canSimulateSleep,
+  canSimulateWater,
   onChange,
   onJumpCycle,
   onSimulate,
   onSimulateSleep,
+  onSimulateWater,
   onReset,
   onClose,
 }: DemoPanelProps) {
@@ -55,6 +59,7 @@ export function DemoPanel({
   const [jumped, setJumped] = useState(false)
   const [simulated, setSimulated] = useState(false)
   const [sleepSimulated, setSleepSimulated] = useState(false)
+  const [waterSimulated, setWaterSimulated] = useState(false)
   const timeInput =
     'h-11 w-full rounded-[14px] border border-border bg-surface px-3 text-base text-text focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none'
 
@@ -109,6 +114,22 @@ export function DemoPanel({
                 />
               ))}
             </div>
+          </section>
+
+          <section className="flex flex-col gap-2">
+            <Label>Hydration</Label>
+            <button
+              type="button"
+              disabled={!canSimulateWater}
+              onClick={() => {
+                onSimulateWater()
+                setWaterSimulated(true)
+              }}
+              className={`h-11 rounded-full border border-border bg-surface px-4 text-sm font-medium text-text disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`}
+            >
+              {waterSimulated ? 'Simulated 12 days ✓' : 'Simulate 12 days of water'}
+            </button>
+            {!canSimulateWater && <p className="text-sm text-muted">Set up Hydration first.</p>}
           </section>
 
           <section className="flex flex-col gap-2">

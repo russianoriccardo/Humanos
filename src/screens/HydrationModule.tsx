@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { AlertTriangle, ChevronLeft, Ellipsis, GlassWater } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, ChevronRight, Ellipsis, GlassWater } from 'lucide-react'
+import { RemindersSheet } from '../hydration/tabs/RemindersSheet'
 import { Chip } from '../components/Chip'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { Screen } from '../components/Screen'
@@ -45,6 +46,9 @@ type HydrationModuleProps = {
   onOpenSituation: (situationId: string) => void
   onOpenSaved: () => void
   onAddDrink: (card: GuideCard, replaceId?: string) => void
+  onEditTarget: () => void
+  onMyDrinks: () => void
+  onAppleHealth: () => void
 }
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
@@ -67,6 +71,9 @@ export function HydrationModule({
   onOpenSituation,
   onOpenSaved,
   onAddDrink,
+  onEditTarget,
+  onMyDrinks,
+  onAppleHealth,
 }: HydrationModuleProps) {
   const today = useHydrationToday(state)
   const weather = useWeather()
@@ -227,9 +234,36 @@ export function HydrationModule({
         />
       )}
 
-      {/* The menu and the reminders sheet are filled in with the Guide step. */}
       {sheet?.kind === 'menu' && (
         <Sheet title="Hydration" onClose={close}>
+          <div className="flex flex-col divide-y divide-border rounded-[20px] border border-border bg-surface">
+            {[
+              { label: active.doctorLimit ? 'Edit limit' : 'Edit target', value: formatLitres(active.targetMl), onClick: onEditTarget },
+              { label: 'My drinks', value: String(active.drinks.length), onClick: onMyDrinks },
+              {
+                label: 'Reminders',
+                value: !active.reminderOn ? 'Off' : `${active.slots.filter((s) => s.on).length} a day`,
+                onClick: () => setSheet({ kind: 'reminders' }),
+              },
+              { label: 'Apple Health', value: state.hydration.health === 'connected' ? 'Connected' : 'Not connected', onClick: onAppleHealth },
+            ].map((row) => (
+              <button
+                key={row.label}
+                type="button"
+                onClick={() => {
+                  if (row.label !== 'Reminders') close()
+                  row.onClick()
+                }}
+                className={`flex h-14 items-center justify-between gap-3 px-4 text-left ${focusRing}`}
+              >
+                <span className="text-[15px] font-semibold text-text">{row.label}</span>
+                <span className="flex items-center gap-1 text-sm text-muted">
+                  {row.value}
+                  <ChevronRight size={16} aria-hidden />
+                </span>
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             onClick={() => setSheet({ kind: 'reset' })}
@@ -263,9 +297,13 @@ export function HydrationModule({
         </Sheet>
       )}
       {sheet?.kind === 'reminders' && (
-        <Sheet title="Reminders" subtitle="Only when you're behind pace. Never more than 3 a day." onClose={close}>
-          <p className="text-sm text-muted">Reminder settings are on their way.</p>
-        </Sheet>
+        <RemindersSheet
+          active={active}
+          sleepLive={!!state.sleepActive}
+          onChange={onActiveChange}
+          onToggleReminder={onToggleReminder}
+          onClose={close}
+        />
       )}
     </>
   )

@@ -101,6 +101,18 @@ laptop. The hidden Demo panel lets you:
 | Product verdicts | **Real rules, on-device** (`analyzeProduct.ts` + `ingredients.ts`). The AI only extracts the label; it never decides the verdict. Guidance, not medical advice. |
 | Reminders | **Local only.** They fire while the app is open or in the background; a web app can't wake itself when closed, so a missed reminder shows on the next open. |
 
+## Hydration module
+
+Set up in a few taps: how closely you keep count, what you usually drink (built ins plus up to three of your own,
+alcohol is logged but never counted), Apple Health for people who already track, and a target from your weight and
+activity (or a doctor's fluid limit, which is never raised and never pushes for more). Today shows litres against an
+evenly paced day from your wake time to 20:00, one tap logging with undo, swipe to delete, a hot day adjustment from
+the real afternoon temperature (opt in, from day 3) and, with Apple Health, a workout adjustment. Up to three reminders
+fire only when you're behind pace and go quiet after 20:00 (earlier when Sleep says lights out is early). The Guide holds
+short, sourced cards by situation and a few myths, with no detox talk; saves survive a module reset. Logic lives in
+`src/hydration/` with unit tests; Apple Health is mocked in `src/hydration/demo.ts`. Demo panel: Hot day (29 or 33°C),
+Workout today, and **Simulate 12 days of water** for the investor "day 12" state.
+
 ## Privacy
 
 - **Face photos never leave the device.** Camera tracks stop on capture and when leaving the screen; the frame is

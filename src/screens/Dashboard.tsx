@@ -48,6 +48,7 @@ type DashboardProps = {
   onJumpCycle: () => void
   onSimulate: () => void
   onSimulateSleep: () => void
+  onSimulateWater: () => void
   onStartModule: (moduleId: string) => void
   onOpenModule: (moduleId: string, sleepTab?: SleepTab) => void
   onReset: () => void
@@ -143,6 +144,7 @@ export function Dashboard({
   onJumpCycle,
   onSimulate,
   onSimulateSleep,
+  onSimulateWater,
   onStartModule,
   onOpenModule,
   onReset,
@@ -400,10 +402,12 @@ export function Dashboard({
           demo={state.demo}
           canJumpCycle={!!active}
           canSimulateSleep={!!sleepActive}
+          canSimulateWater={!!state.hydrationActive}
           onChange={onDemoChange}
           onJumpCycle={onJumpCycle}
           onSimulate={onSimulate}
           onSimulateSleep={onSimulateSleep}
+          onSimulateWater={onSimulateWater}
           onReset={onReset}
           onClose={() => setDemoOpen(false)}
         />
