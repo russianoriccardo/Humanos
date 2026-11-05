@@ -1,9 +1,17 @@
 # HUMANOS
 
-A calm, customizable hub for personal care: skincare, cycle, nutrition, teeth, fitness, sleep. This repo is the
-mobile web prototype: the 5-step onboarding, the dashboard, the Skincare setup flow (with an on-device face scan),
-and the live Skincare module — Today's adjusted routine, Face yoga, Progress with 14-day rescans, and Ask AI product
-checks.
+A calm, customizable hub for personal care: skincare, cycle, nutrition, teeth, fitness, sleep, hydration. This repo
+is the mobile web prototype: the 5-step onboarding, the dashboard, and three live modules, each with its own setup
+flow:
+
+- **Skincare**: on-device face scan, Today's adjusted routine, Face yoga, Progress with 14-day rescans, and Ask AI
+  product checks.
+- **Sleep**: a weekly lights-out plan, wind down sessions, morning check ins and patterns from your own nights.
+- **Hydration**: a daily water target with one tap logging, pace, hot day adjustments, reminders only when you're
+  behind, and a sourced Guide.
+
+The other modules (cycle, nutrition, teeth, fitness, mind) show a "Coming next" screen. Live modules appear on the
+dashboard as squares; modules not set up yet are listed below them, one a day suggested.
 
 Vite + React + TypeScript + Tailwind CSS v4. App state lives on the device in `localStorage` under `humanos.state`.
 The only server code is one optional Netlify Function that reads product labels (see Ask AI below).
@@ -26,7 +34,8 @@ third-party requests.
 `VITE_BASE` (default `/`) sets the path the app is served from.
 
 Other scripts: `npm run build` (type-check + production build into `dist/`), `npm run preview` (serve the build),
-`npm run lint`, `npm test` (Vitest: rules engine, product checks, weather parsing, the Netlify Function).
+`npm run lint`, `npm test` (Vitest: Skincare rules engine and product checks, the Sleep plan and patterns, the Hydration
+target, pace, reminders, Guide and demo data, weather parsing, the Netlify Function).
 
 Locally, Ask AI runs in demo mode (Vite doesn't run Netlify Functions). To exercise the real function, use
 `netlify dev` from the Netlify CLI with `ANTHROPIC_API_KEY` set in your shell.
@@ -76,30 +85,55 @@ barcode scanner on a phone, use a deployed (HTTPS) site. If the camera is unavai
 
 ## Demo panel and reset
 
-On the dashboard, **long-press the avatar** (the initial in the top-right) for about 0.7s — or right-click it on a
+On the dashboard, **long-press the avatar** (the initial in the top-right) for about 0.7s, or right-click it on a
 laptop. The hidden Demo panel lets you:
 
-- switch the **mock health scenario**: *Restful* (8h, no training), *Short sleep, trained* (5h10, trained yesterday —
-  default), *Stressed* (6h, high resting heart rate);
-- set the **fake outdoor window** (default 12:30–13:30) used by the UV-reapply tip;
-- **jump the scan cycle to day 14** to unlock the rescan;
-- **Reset demo** — clears every `humanos.*` key and saved scan photos on the device and returns to the first
-  onboarding screen.
+- switch the **mock health scenario**: *No data* (default, what a new account sees: no sleep or training tips),
+  *Restful* (8h, no training), *Short sleep, trained* (5h10, trained yesterday), *Stressed* (6h, high resting heart
+  rate);
+- pick the **Health connect** outcome that "Connect Apple Health" plays out in Sleep and Hydration setup: *Not
+  available* (default), *Connected*, *Denied*, *No data*;
+- set a **Hot day** (Off, 29°C or 33°C) and **Workout today** (0, 45 or 90 min) for Hydration; workouts only count
+  when Apple Health is connected;
+- set the **fake outdoor window** (default 12:30 to 13:30) used by the UV reapply tip;
+- **jump the scan cycle to day 14** to unlock the rescan, or **simulate 9 days** of Skincare use;
+- **Simulate 18 nights of sleep**: check ins, tags, wind down sessions and tonight's training tip (the "night 18"
+  investor state);
+- **Simulate 12 days of water**: logs with a quiet afternoon, target hit 4 of 7, today's entries, Ginger tea in the
+  quick log and three Guide saves (the "day 12" investor state);
+- **Reset demo**: clears every `humanos.*` key and saved scan photos on the device (including Hydration Guide saves)
+  and returns to the first onboarding screen.
+
+Each module also has **Reset** in its ··· menu, which clears only that module and its reminders (Hydration keeps your
+Guide saves).
 
 ## What's real and what's mocked
 
 | Area | Status |
 |---|---|
 | Weather, UV, humidity | **Real** — Open-Meteo, no API key. Location is asked for once on the Today tab (rounded to ~1 km); if denied, a city from `src/config.ts` (default Milan) is used and can be changed. Cached 30 minutes; offline it shows the last data ("Updated 2h ago") or hides weather tips. |
-| Sleep, training, resting heart rate | **Mock** (`src/services/health.mock.ts`), switchable in the Demo panel. A web app can't read HealthKit / Health Connect; this is replaced when the app is wrapped natively. |
-| Today's tips and tonight's routine | **Real rules** (`src/skincare/engine/buildToday.ts`) on the real weather + mock health. Thresholds in `rules.config.ts`. |
+| Apple Health, training, resting heart rate | **Mock.** A web app can't read HealthKit or Health Connect. `src/services/health.mock.ts` holds the Demo panel scenarios (default *No data*); "Connect Apple Health" in setup plays out the Demo panel's Health connect outcome, and Hydration's imported history is `src/hydration/demo.ts`. Replaced when the app is wrapped natively. |
+| Sleep for Skincare | **Real when you log it**: Skincare reads last night's Sleep morning check in; otherwise the mock scenario; with neither, sleep rules stay quiet. |
+| Today's tips and tonight's routine | **Real rules** (`src/skincare/engine/buildToday.ts`) on the real weather + sleep as above. Thresholds in `rules.config.ts`. |
+| Sleep plan, tips and patterns | **Real rules on your own data** (`src/sleep/plan.ts`, `rules.ts`, `patterns.ts`): lights out moves 15 minutes a week toward a goal; tips start on night 3; patterns unlock after 7 check ins. Patterns in your data, not medical advice. |
+| Hydration target, pace and adjustments | **Real rules** (`src/hydration/`): 30 ml per kg plus activity, paced from wake to 20:00; the hot day adjustment uses the real afternoon temperature from Open-Meteo (opt in), the workout adjustment needs Apple Health. A doctor's fluid limit is never raised. |
 | Glow score | **Simple documented formula** from your logs (`glowScore.ts`): baseline 64 + routine nights + SPF on sunny days + face yoga, each capped. Motivational, not a skin measurement. |
 | Face detection and photo-quality checks | **Real, on-device** (MediaPipe Face Landmarker, loaded only on the scan screen). Thresholds in `src/skincare/scan/scanConfig.ts`. |
 | Skin reading | **Prototype heuristic, not a diagnosis** (`src/skincare/reading.ts`): rules from your answers plus two frame statistics. Must be replaced by a validated model before launch. |
 | Product barcode lookup | **Real** — Open Beauty Facts (open data, no key). Unknown codes fall back to the photo flow. |
 | Product label reading | **Real when `ANTHROPIC_API_KEY` is set** (Claude reads the photo in the Netlify Function), otherwise **demo mode** with a fixed "Glow toner · 7% glycolic acid" and a visible "Demo mode" tag. |
 | Product verdicts | **Real rules, on-device** (`analyzeProduct.ts` + `ingredients.ts`). The AI only extracts the label; it never decides the verdict. Guidance, not medical advice. |
-| Reminders | **Local only.** They fire while the app is open or in the background; a web app can't wake itself when closed, so a missed reminder shows on the next open. |
+| Reminders | **Local only.** They fire while the app is open or in the background; a web app can't wake itself when closed, so a missed reminder shows on the next open. Sleep and Hydration reminders renew each day the app runs; a Hydration nudge fires only if you're behind pace at that moment. |
+
+## Sleep module
+
+Setup asks how you usually sleep, what you want from it (up to two), your weekday bedtime and wake time, and Apple
+Health. The plan starts 15 minutes earlier than your bedtime and moves lights out 15 minutes a week toward a goal that
+leaves 7h 30m before your alarm. Tonight shows lights out, a tickable wind down and, from night 3, tips from simple
+rules. Mornings is a ten second check in (times prefilled from the plan, how rested you feel, optional tags). Wind down
+has breathing and body sessions with a player. Patterns unlocks after 7 check ins: the last 7 nights, consistency,
+what helps and what costs you, and a link to Skincare. A wind down reminder and a morning check in reminder are
+scheduled from setup on.
 
 ## Hydration module
 
@@ -130,19 +164,28 @@ Workout today, and **Simulate 12 days of water** for the investor "day 12" state
 
 ```
 src/
-  App.tsx                 state-machine router, persisted AppState, reminders
+  App.tsx                 state-machine router, persisted AppState, reminders (fire, renew, undo)
   config.ts               fallback cities, cache time, partnerships flag, API base
   state/                  AppState (load/save/migration), shared weather provider
   services/               weather (Open-Meteo), health.mock, reminders, photoStore (IndexedDB),
                           productLookup (Open Beauty Facts), productAi (Netlify Function client)
   onboarding/             5-step onboarding flow
-  screens/                Dashboard, SkincareModule, YogaPlayer, ComingNext placeholder
+  screens/                Dashboard, SkincareModule, SleepModule, SleepSessionPlayer, HydrationModule,
+                          YogaPlayer, ComingNext placeholder
   skincare/               setup steps, result screen, reading, routine, progress
   skincare/engine/        buildToday, glowScore, analyzeProduct, ingredients, rules.config (+ tests)
   skincare/tabs/          Today, Face yoga, Progress, Ask AI
   skincare/yoga/          session content (faceYoga.content.ts), timer, streak stats
   skincare/scan/          camera hook, MediaPipe loader, quality checks, scanConfig
-  components/             shared UI (Screen, buttons, Chip, cards, tabs, sheets, …)
+  sleep/                  plan, rules, patterns, sessions, demo data (+ tests)
+  sleep/setup/            Sleep setup steps
+  sleep/tabs/             Tonight, Wind down, Mornings, Patterns
+  hydration/              drinks, target, day and pace, adjustments, nudges, tuning, week, mirror,
+                          Guide content, demo data (+ tests), My drinks
+  hydration/setup/        Hydration setup steps
+  hydration/tabs/         Today, Guide, log and edit sheet, reminders sheet
+  hydration/guide/        situation page, card page, Saved
+  components/             shared UI (Screen, buttons, Chip, cards, tabs, sheets, toasts, …)
   lib/                    module catalog, theme, dates, motion, keyboard detection
 netlify/functions/
   read-product.ts         label reading + follow-up answers (Claude), demo mode without a key
