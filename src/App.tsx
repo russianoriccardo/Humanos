@@ -38,6 +38,10 @@ import { hydrationDay, DEFAULT_WAKE } from './hydration/day'
 import { quietAfter } from './hydration/nudges'
 import { UndoToast } from './components/UndoToast'
 import { HydrationModule } from './screens/HydrationModule'
+import { WeatherTemp } from './hydration/WeatherTemp'
+import { hydrationToday } from './hydration/today'
+import { WATER } from './hydration/drinks'
+import { hydrationReminders as buildHydrationReminders, mergeWithCheckIn, shouldFire, weeklyRecap } from './hydration/nudges'
 import { SleepSessionPlayer } from './screens/SleepSessionPlayer'
 import { sessionById } from './sleep/sessions'
 import { simulateSleep } from './sleep/demo'
@@ -60,6 +64,7 @@ import {
   initialAppState,
   initialSkincare,
   initialSleep,
+  initialHydration,
   loadAppState,
   saveAppState,
   type AppState,
@@ -120,7 +125,7 @@ const SKINCARE_FLOW: RouteName[] = [
 
 const SLEEP_FLOW: RouteName[] = ['sleep/anchor', 'sleep/intent', 'sleep/constraint', 'sleep/health', 'sleep/mirror']
 
-type Alert = { message: string; detail?: string; icon?: 'check' | 'bell' }
+type Alert = { message: string; detail?: string; icon?: 'check' | 'bell'; action?: { label: string; onClick: () => void } }
 
 function App() {
   const [state, setState] = useState<AppState>(() => loadAppState(createSkincareActive))
@@ -138,6 +143,8 @@ function App() {
   const [undo, setUndo] = useState<{ key: number; message: string; revert: () => void } | null>(null)
   const [moduleToast, setModuleToast] = useState<string | null>(null)
   const [alert, setAlert] = useState<Alert | null>(null)
+  // Today's max temperature near the user (null without location or fresh weather), for hydration reminders.
+  const [realTemp, setRealTemp] = useState<number | null>(null)
   const [resetCount, setResetCount] = useState(0)
   const [photoTotal, setPhotoTotal] = useState(0)
 
@@ -220,6 +227,23 @@ function App() {
     })
   }
 
+  function resetHydrationModule() {
+    setState((current) => ({
+      ...current,
+      modulesSetUp: current.modulesSetUp.filter((id) => id !== 'hydration'),
+      hydration: initialHydration,
+      hydrationActive: null,
+      ui: {
+        ...current.ui,
+        reminders: current.ui.reminders.filter((r) => !isModuleReminder('hydration', r.id)),
+        hydrationTab: 'today',
+        hydrationSituation: null,
+        hydrationCard: null,
+      },
+    }))
+    go('dashboard', -1)
+  }
+
   async function toggleHydrationReminder(on: boolean) {
     updateHydrationActive((a) => ({ ...a, reminderOn: on, pausedUntil: on ? undefined : a.pausedUntil }))
     if (on) await requestPermission()
@@ -257,11 +281,28 @@ function App() {
   useEffect(() => {
     const { due, expired, upcoming } = splitDue(state.ui.reminders)
     if (due.length || expired.length) {
+      // Hydration nudges are checked at fire time: only when behind pace, never once on track or done.
+      const water = hydrationToday(state, new Date(), realTemp)
+      const shown: { id: string; at: string }[] = []
       for (const reminder of due) {
         if (firedRef.current.has(reminder.id)) continue
         firedRef.current.add(reminder.id)
+        const hydration = reminder.id.startsWith('hydration:')
+        if (hydration && water && !shouldFire(reminder, { pace: water.pace })) continue
         showSystemNotification(reminder)
-        setAlert({ message: reminder.title, detail: reminder.body, icon: 'bell' })
+        // Web notifications can't log from the notification itself; the in app banner can.
+        const nudge = reminder.id.startsWith('hydration:nudge:')
+        setAlert({
+          message: reminder.title,
+          detail: reminder.body,
+          icon: 'bell',
+          action: nudge ? { label: '+250 ml water', onClick: () => logDrink(WATER, 250) } : undefined,
+        })
+        if (hydration && !reminder.id.startsWith('hydration:recap:')) shown.push({ id: reminder.id, at: new Date().toISOString() })
+      }
+      if (shown.length) {
+        const since = Date.now() - 14 * 86_400_000
+        updateHydrationActive((a) => ({ ...a, fired: [...a.fired.filter((x) => Date.parse(x.at) >= since), ...shown] }))
       }
       setReminders((list) => list.filter((r) => !due.includes(r) && !expired.includes(r)))
       return
@@ -271,6 +312,8 @@ function App() {
     // setTimeout caps at ~24.8 days; re-evaluate before that.
     const timer = window.setTimeout(() => setReminders((list) => [...list]), Math.min(next - Date.now() + 250, 2 ** 31 - 1))
     return () => window.clearTimeout(timer)
+    // Runs when the schedule changes; pace is read from the state of that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.ui.reminders])
 
   // Sleep reminders roll forward: whenever the app runs, tonight's wind down and the next check in exist.
@@ -291,6 +334,34 @@ function App() {
     // Keyed on the times and the day, not on every check in.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sleepReminderKey])
+
+  // Hydration reminders roll forward too: today's nudges (folded into Sleep's check in when close)
+  // and the Sunday recap. Recomputed when the target, slots, switch, pause or day change.
+  const water = state.hydrationActive
+  const waterDay = hydrationDay()
+  const waterNow = hydrationToday(state, new Date(), realTemp)
+  const hydrationReminderKey = water
+    ? [waterDay, waterNow?.target, JSON.stringify(water.slots), water.reminderOn, water.pausedUntil ?? '', water.doctorLimit, waterNow?.adj.heatMl, state.sleepActive?.wake ?? ''].join('|')
+    : null
+  useEffect(() => {
+    if (!hydrationReminderKey || !water || !waterNow) return
+    const now = new Date()
+    const wanted = buildHydrationReminders(water, waterDay, now, { target: waterNow.target, quiet: waterNow.quiet, hot: waterNow.adj.heatMl > 0 })
+    const recap = weeklyRecap(water, waterDay)
+    setReminders((list) => {
+      // Today's future nudges are rebuilt; anything already fired or for other days stays as it is.
+      const isToday = (id: string) => id.startsWith(`hydration:nudge:${waterDay}:`) || id === `hydration:status:${waterDay}`
+      const kept = list.filter((r) => !(isToday(r.id) && Date.parse(r.at) > now.getTime()))
+      const sleepIds = new Set(kept.filter((r) => r.id.startsWith('sleep:checkin:')).map((r) => r.id))
+      const merged = mergeWithCheckIn(wanted, kept.filter((r) => sleepIds.has(r.id)))
+      const sleepById = new Map(merged.sleep.map((r) => [r.id, r]))
+      const next = [...kept.map((r) => sleepById.get(r.id) ?? r), ...merged.hydration]
+      if (recap && !next.some((r) => r.id === recap.id)) next.push(recap)
+      return next
+    })
+    // Keyed on what changes the schedule, not on every log.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrationReminderKey])
 
   async function remindForTip(tip: Tip) {
     if (!tip.action) return
@@ -809,6 +880,7 @@ function App() {
             onEdit={editLog}
             onActiveChange={updateHydrationActive}
             onToggleReminder={toggleHydrationReminder}
+            onReset={resetHydrationModule}
           />
         ) : null
       case 'hydration/situation':
@@ -840,6 +912,7 @@ function App() {
       onChoice={(choice, city) => updateUi(city ? { locationChoice: choice, city } : { locationChoice: choice })}
       onLog={logWeather}
     >
+      <WeatherTemp locationChoice={state.ui.locationChoice} onChange={setRealTemp} />
       <div className="flex min-h-dvh w-full items-center justify-center bg-neutral-200 p-0 sm:p-6 dark:bg-neutral-950">
         <div className="relative h-dvh w-full overflow-hidden bg-bg sm:h-[844px] sm:max-w-[430px] sm:rounded-[40px] sm:shadow-2xl sm:ring-1 sm:ring-black/5">
           <StepTransition
@@ -866,7 +939,8 @@ function App() {
               message={alert.message}
               detail={alert.detail}
               icon={alert.icon}
-              duration={6000}
+              action={alert.action}
+              duration={alert.action ? 10000 : 6000}
               onDone={() => setAlert(null)}
             />
           )}

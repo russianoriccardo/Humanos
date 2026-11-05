@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronLeft, Ellipsis, GlassWater } from 'lucide-react'
+import { AlertTriangle, ChevronLeft, Ellipsis, GlassWater } from 'lucide-react'
 import { Chip } from '../components/Chip'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { Screen } from '../components/Screen'
@@ -35,6 +35,7 @@ type HydrationModuleProps = {
   onEdit: (id: string, patch: Partial<Pick<DrinkLog, 'at' | 'ml' | 'drinkId' | 'name' | 'counts'>>) => void
   onActiveChange: (fn: (active: HydrationActive) => HydrationActive) => void
   onToggleReminder: (on: boolean) => void
+  onReset: () => void
 }
 
 const focusRing = 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent'
@@ -51,6 +52,7 @@ export function HydrationModule({
   onEdit,
   onActiveChange,
   onToggleReminder,
+  onReset,
 }: HydrationModuleProps) {
   const today = useHydrationToday(state)
   const weather = useWeather()
@@ -201,7 +203,36 @@ export function HydrationModule({
       {/* The menu and the reminders sheet are filled in with the Guide step. */}
       {sheet?.kind === 'menu' && (
         <Sheet title="Hydration" onClose={close}>
-          <p className="text-sm text-muted">More options are on their way.</p>
+          <button
+            type="button"
+            onClick={() => setSheet({ kind: 'reset' })}
+            className={`flex h-12 items-center rounded-[16px] border border-border bg-surface px-4 text-left text-[15px] font-semibold text-warning ${focusRing}`}
+          >
+            Reset Hydration
+          </button>
+        </Sheet>
+      )}
+      {sheet?.kind === 'reset' && (
+        <Sheet title="Reset Hydration?" onClose={close}>
+          <div className="flex items-start gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-warning-tint text-warning">
+              <AlertTriangle size={20} aria-hidden />
+            </span>
+            <p className="text-sm leading-normal text-text">
+              This deletes your Hydration logs, drinks and reminders, and takes you back to setup. Your other modules and your Guide saves
+              stay as they are.
+            </p>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={onReset}
+              className={`h-14 w-full rounded-full bg-warning text-base font-semibold text-white ${focusRing}`}
+            >
+              Reset Hydration
+            </button>
+            <SecondaryButton onClick={close}>Cancel</SecondaryButton>
+          </div>
         </Sheet>
       )}
       {sheet?.kind === 'reminders' && (

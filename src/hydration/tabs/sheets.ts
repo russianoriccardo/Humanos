@@ -6,4 +6,5 @@ export type HydrationSheet =
   | { kind: 'city' }
   | { kind: 'menu' }
   | { kind: 'reminders' }
+  | { kind: 'reset' }
   | null
