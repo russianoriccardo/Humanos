@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react'
-import { Bell, Check, ChevronRight, Plus } from 'lucide-react'
+import { Bell, Check, ChevronDown, ChevronRight, Pin, Plus } from 'lucide-react'
 import { Screen } from '../components/Screen'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { Avatar } from '../components/Avatar'
@@ -11,7 +11,8 @@ import { Toast } from '../components/Toast'
 import { DemoPanel } from '../components/DemoPanel'
 import { addDays, dateKey } from '../lib/dates'
 import { useHydrationToday } from '../hydration/useHydrationToday'
-import { WATER } from '../hydration/drinks'
+import { resolveShortcut } from '../hydration/shortcut'
+import { LogSheet } from '../hydration/tabs/LogSheet'
 import { formatLitres } from '../hydration/target'
 import { MODULE_ICONS, moduleName, orderedModules } from '../lib/modules'
 import {
@@ -43,7 +44,7 @@ type DashboardProps = {
   onActiveChange: (fn: (active: SkincareActive) => SkincareActive) => void
   onSleepActiveChange: (fn: (active: SleepActive) => SleepActive) => void
   onHydrationActiveChange: (fn: (active: HydrationActive) => HydrationActive) => void
-  onLogDrink: (drink: Drink, ml: number) => void
+  onLogDrink: (drink: Drink, ml: number, at?: Date) => void
   onDemoChange: (patch: Partial<DemoState>) => void
   onJumpCycle: () => void
   onSimulate: () => void
@@ -112,7 +113,7 @@ function ModuleSquare({ name, icon: Icon, isNew, wide, highlight = false, value,
         )}
       </div>
       <div className="pointer-events-none mt-auto flex min-w-0 flex-col gap-0.5">
-        <p className={['truncate leading-tight font-bold text-text', valueSize === 'big' ? 'text-[26px]' : 'text-base'].join(' ')}>{value}</p>
+        <p className={['truncate leading-none font-bold text-text', valueSize === 'big' ? 'text-[26px]' : 'text-base'].join(' ')}>{value}</p>
         <p className="truncate text-[13px] text-muted">{caption}</p>
         {extra && <div className="pt-2">{extra}</div>}
       </div>
@@ -150,6 +151,8 @@ export function Dashboard({
   onReset,
 }: DashboardProps) {
   const [demoOpen, setDemoOpen] = useState(false)
+  // The quick log sheet behind the + pill's arrow.
+  const [quickOpen, setQuickOpen] = useState(false)
   const { plan, usableWeather, health } = useToday(state)
   const water = useHydrationToday(state)
   const active = state.skincareActive
@@ -206,7 +209,11 @@ export function Dashboard({
     if (!water) return null
     const { active: h, total, target, pace, isDay1, beforeDay1 } = water
     const reached = pace === 'done' || pace === 'limitReached'
-    const quick = h.drinks[0] ?? WATER
+    const sc = resolveShortcut(h)
+    // Square cards are narrow: the unit goes, the label truncates.
+    const label = `${sc.drink.name} · ${sc.ml}${wide ? ' ml' : ''}`
+    // Each part keeps a 44 px hit area around its 32 px look.
+    const hit = "relative before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-['']"
     const word =
       pace === 'behind'
         ? 'Behind pace'
@@ -243,24 +250,40 @@ export function Dashboard({
           ) : undefined
         }
         extra={
-          <span className="flex items-center gap-2">
-            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-tint" aria-hidden>
+          <span className="flex flex-col gap-1.5">
+            <span className="block h-1.5 overflow-hidden rounded-full bg-tint" aria-hidden>
               <span
                 className={['block h-full rounded-full', h.doctorLimit && reached ? 'bg-warning' : 'bg-accent'].join(' ')}
                 style={{ width: `${Math.min(100, (total / target) * 100)}%` }}
               />
             </span>
             {!(h.doctorLimit && reached) && (
-              <button
-                type="button"
-                onClick={() => onLogDrink(quick, quick.ml)}
-                aria-label={`Log ${quick.name}, ${quick.ml} ml`}
-                className={`pointer-events-auto relative z-10 -my-2 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${focusRing}`}
+              <span
+                className={[
+                  'pointer-events-auto relative z-10 flex h-8 min-w-0 rounded-full bg-cta text-cta-text',
+                  wide ? 'self-start' : 'w-full',
+                ].join(' ')}
               >
-                <span className="flex h-[30px] w-[30px] items-center justify-center rounded-full bg-cta text-cta-text">
-                  <Plus size={16} strokeWidth={2.5} aria-hidden />
-                </span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => onLogDrink(sc.drink, sc.ml)}
+                  aria-label={`Log ${sc.drink.name}, ${sc.ml} ml`}
+                  className={`${hit} flex min-w-0 flex-1 items-center gap-0.5 rounded-l-full pr-1 pl-2 ${focusRing}`}
+                >
+                  <Plus size={13} strokeWidth={2.5} className="shrink-0" aria-hidden />
+                  {sc.pinned && <Pin size={11} className="shrink-0" aria-hidden />}
+                  <span className={['font-semibold', wide ? 'text-[13px] whitespace-nowrap' : 'truncate text-xs'].join(' ')}>{label}</span>
+                </button>
+                <span className="my-1.5 w-px shrink-0 bg-cta-text/20" aria-hidden />
+                <button
+                  type="button"
+                  onClick={() => setQuickOpen(true)}
+                  aria-label="Change the + drink"
+                  className={`${hit} flex w-7 shrink-0 items-center justify-center rounded-r-full ${focusRing}`}
+                >
+                  <ChevronDown size={16} aria-hidden />
+                </button>
+              </span>
             )}
           </span>
         }
@@ -399,6 +422,24 @@ export function Dashboard({
     <>
       {showToast && freshModuleId && <Toast message={`${moduleName(freshModuleId)} is set up`} onDone={onToastDone} />}
 
+      {quickOpen && water && (
+        <LogSheet
+          drinks={water.active.drinks}
+          initialDrinkId={resolveShortcut(water.active).drink.id}
+          initialMl={resolveShortcut(water.active).ml}
+          shortcutMode={{ pinned: resolveShortcut(water.active).pinned }}
+          limit={water.active.doctorLimit ? { total: water.total, target: water.target } : undefined}
+          onClose={() => setQuickOpen(false)}
+          onSave={(drink, ml, at, pinned) => {
+            setQuickOpen(false)
+            // A counted drink becomes the + drink: pinned keeps it, unpinned lets + follow the last drink.
+            // A drink that doesn't count is logged and leaves the shortcut as it was.
+            if (drink.counts) onHydrationActiveChange((a) => ({ ...a, shortcut: { drinkId: drink.id, ml, pinned: !!pinned } }))
+            onLogDrink(drink, ml, at)
+          }}
+        />
+      )}
+
       {demoOpen && (
         <DemoPanel
           demo={state.demo}
@@ -485,7 +526,12 @@ export function Dashboard({
               {coachFor === 'hydration' && (
                 <CoachMark
                   title="Log without opening Hydration"
-                  body="Tap + to add a glass of water. Open the card for everything else."
+                  body={(() => {
+                    const sc = state.hydrationActive ? resolveShortcut(state.hydrationActive) : null
+                    return sc
+                      ? `Tap + to log ${sc.drink.name} ${sc.ml} ml. The arrow picks another drink, and + remembers it.`
+                      : 'Tap + to log a drink. The arrow picks another drink, and + remembers it.'
+                  })()}
                   right={coachRight}
                 />
               )}

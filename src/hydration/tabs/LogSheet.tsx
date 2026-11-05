@@ -31,14 +31,17 @@ type LogSheetProps = {
   // Editing an existing entry; otherwise a new log.
   entry?: DrinkLog
   initialDrinkId?: string
+  initialMl?: number
+  // Opened from the dashboard +: what's saved here becomes the + drink; pinned keeps it there.
+  shortcutMode?: { pinned: boolean }
   // Doctor mode: today's total and limit, to confirm before going over.
   limit?: { total: number; target: number }
-  onSave: (drink: Drink, ml: number, at: Date) => void
+  onSave: (drink: Drink, ml: number, at: Date, pinned?: boolean) => void
   onDelete?: () => void
   onClose: () => void
 }
 
-export function LogSheet({ drinks, entry, initialDrinkId, limit, onSave, onDelete, onClose }: LogSheetProps) {
+export function LogSheet({ drinks, entry, initialDrinkId, initialMl, shortcutMode, limit, onSave, onDelete, onClose }: LogSheetProps) {
   const [now] = useState(() => new Date())
   const picked0 = drinks.find((d) => d.id === (entry?.drinkId ?? initialDrinkId)) ?? drinks[0]
   // An edited entry keeps its own drink even if it's no longer on the quick log.
@@ -48,7 +51,8 @@ export function LogSheet({ drinks, entry, initialDrinkId, limit, onSave, onDelet
       : drinks
   const [drinkId, setDrinkId] = useState(entry?.drinkId ?? picked0.id)
   const drink = options.find((d) => d.id === drinkId) ?? options[0]
-  const [ml, setMl] = useState(entry?.ml ?? picked0.ml)
+  const [ml, setMl] = useState(entry?.ml ?? initialMl ?? picked0.ml)
+  const [pin, setPin] = useState(shortcutMode?.pinned ?? false)
   const day = entry ? hydrationDay(new Date(entry.at)) : hydrationDay(now)
   const [time, setTime] = useState(entry ? clockOf(new Date(entry.at)) : clockOf(now))
   const [timeTouched, setTimeTouched] = useState(!!entry)
@@ -64,6 +68,8 @@ export function LogSheet({ drinks, entry, initialDrinkId, limit, onSave, onDelet
         : `That time hasn't happened yet. It's ${clockOf(new Date())} now.`
       : null
   const big = ml > BIG_ML
+  // A drink that doesn't count can be logged, never pinned to +.
+  const pinned = pin && drink.counts
   const goesOver = !!limit && drink.counts && limit.total - (entry?.counts ? entry.ml : 0) + ml > limit.target
 
   function save() {
@@ -71,7 +77,7 @@ export function LogSheet({ drinks, entry, initialDrinkId, limit, onSave, onDelet
       setConfirmOver(true)
       return
     }
-    onSave(drink, ml, at)
+    onSave(drink, ml, at, pinned)
   }
 
   if (confirmOver && limit) {
@@ -82,7 +88,7 @@ export function LogSheet({ drinks, entry, initialDrinkId, limit, onSave, onDelet
           your doctor.
         </p>
         <div className="flex flex-col items-center gap-2">
-          <PrimaryButton onClick={() => onSave(drink, ml, at)}>Log {ml} ml</PrimaryButton>
+          <PrimaryButton onClick={() => onSave(drink, ml, at, pinned)}>Log {ml} ml</PrimaryButton>
           <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
         </div>
       </Sheet>
@@ -92,7 +98,11 @@ export function LogSheet({ drinks, entry, initialDrinkId, limit, onSave, onDelet
   const stepButton = `flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text disabled:opacity-40 ${focusRing}`
 
   return (
-    <Sheet title={entry ? 'Edit drink' : 'Log a drink'} onClose={onClose}>
+    <Sheet
+      title={entry ? 'Edit drink' : 'Log a drink'}
+      subtitle={shortcutMode ? 'The + remembers what you log here.' : undefined}
+      onClose={onClose}
+    >
       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Drink">
         {options.map((d) => {
           const Icon = drinkIcon(d)
@@ -197,9 +207,52 @@ export function LogSheet({ drinks, entry, initialDrinkId, limit, onSave, onDelet
         </section>
       )}
 
+      {shortcutMode && (
+        <div className="flex flex-col gap-2">
+          <label
+            className={[
+              'flex items-center justify-between gap-4 rounded-[16px] border border-border bg-surface p-4',
+              drink.counts ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
+            ].join(' ')}
+          >
+            <span className="flex flex-col gap-0.5">
+              <span className="text-[15px] font-semibold text-text">Always use this for +</span>
+              <span className="text-sm text-muted">{pinned ? `On: + logs ${drink.name} · ${ml} ml` : 'Off: + follows your last drink'}</span>
+            </span>
+            <input
+              type="checkbox"
+              role="switch"
+              checked={pinned}
+              disabled={!drink.counts}
+              onChange={(e) => setPin(e.target.checked)}
+              className="peer sr-only"
+            />
+            <span
+              aria-hidden
+              className={[
+                'relative h-[31px] w-[51px] shrink-0 rounded-full transition-colors duration-150 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent',
+                pinned ? 'bg-cta' : 'bg-border',
+              ].join(' ')}
+            >
+              <span
+                className={[
+                  'absolute top-[2px] h-[27px] w-[27px] rounded-full bg-white shadow-sm transition-transform duration-150 motion-reduce:transition-none',
+                  pinned ? 'translate-x-[22px]' : 'translate-x-[2px]',
+                ].join(' ')}
+              />
+            </span>
+          </label>
+          {!drink.counts && (
+            <p className="text-sm leading-normal text-warning">
+              {drink.name} doesn't count toward your target, so it can't be the + drink. It's logged as usual.
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="flex flex-col items-center gap-2">
         <PrimaryButton disabled={!!timeError} onClick={save}>
-          {entry ? 'Save' : big ? `Yes, log ${formatLitres(ml)}` : `Log ${ml} ml`}
+          {entry ? 'Save' : big ? `Yes, log ${formatLitres(ml)}` : shortcutMode ? `Log ${drink.name} · ${ml} ml` : `Log ${ml} ml`}
         </PrimaryButton>
         <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
         {entry && onDelete && (
