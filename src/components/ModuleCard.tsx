@@ -9,6 +9,9 @@ type SelectCardProps = {
   icon: Icon
   selected: boolean
   suggested?: boolean
+  // At the module cap: faded but still tappable, so the tap can explain the limit. Never when selected.
+  dimmed?: boolean
+  describedBy?: string
   onClick: () => void
 }
 
@@ -75,16 +78,20 @@ export function ModuleCard(props: ModuleCardProps) {
     )
   }
 
-  const { name, icon, selected, suggested = false, onClick } = props
+  const { name, icon, selected, suggested = false, dimmed = false, describedBy, onClick } = props
+  const faded = dimmed && !selected
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={selected}
+      aria-disabled={faded ? true : undefined}
+      aria-describedby={describedBy}
       className={[
         'flex flex-col gap-6 rounded-[20px] border bg-surface p-4 text-left',
         pressable,
         selected ? 'border-[1.5px] border-accent' : 'border-border',
+        faded ? 'opacity-45' : '',
       ].join(' ')}
     >
       <span className="flex items-start justify-between">

@@ -78,6 +78,17 @@ export function moduleName(id: string) {
 // Modules with a real setup flow. Starting any other module opens ComingNext.
 export const SETUP_READY = ['skincare', 'sleep', 'hydration']
 
+// Free plan: modules active at once. The future paywall reads this same value.
+export const MAX_FREE_MODULES = 3
+
+// Toggle a module in the picked list without ever going above `max`.
+// hitCap is true only when the user tried to add one more than allowed.
+export function toggleModuleWithCap(picked: string[], id: string, max = MAX_FREE_MODULES) {
+  if (picked.includes(id)) return { next: picked.filter((m) => m !== id), hitCap: false }
+  if (picked.length >= max) return { next: picked, hitCap: true }
+  return { next: [...picked, id], hitCap: false }
+}
+
 // Dashboard order: live modules first, in the order they were set up, then the rest in onboarding order.
 // Falls back to Skincare alone if onboarding's module step was skipped.
 export function orderedModules(picked: string[], setUp: string[] = []): string[] {
